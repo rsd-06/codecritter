@@ -83,6 +83,7 @@ export function buildMenu(): Menu {
         { label: 'Start', click: () => pomodoroCommand('start') },
         { label: 'Pause', click: () => pomodoroCommand('pause') },
         { label: 'Resume', click: () => pomodoroCommand('resume') },
+        { label: 'Skip phase', click: () => pomodoroCommand('skip') },
         { label: 'Stop', click: () => pomodoroCommand('stop') },
       ],
     },

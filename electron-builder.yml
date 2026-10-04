@@ -5,6 +5,9 @@ directories:
 files:
   - out/**
   - package.json
+extraResources:
+  - from: bin/critter-hook.mjs
+    to: bin/critter-hook.mjs
 asarUnpack:
   - node_modules/uiohook-napi/**
   - node_modules/get-windows/**

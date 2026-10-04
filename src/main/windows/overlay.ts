@@ -9,6 +9,7 @@ export const STAGE_H = 112;
 
 let win: BrowserWindow | null = null;
 let userHidden = false;
+let peekLocked = false;
 let drag: { cursor: { x: number; y: number }; origin: { x: number; y: number } } | null = null;
 
 export function loadPage(w: BrowserWindow, page: 'overlay' | 'settings'): void {
@@ -59,7 +60,7 @@ function restoredRect(s: Settings): Rectangle {
 
 function persistPosition(): void {
   const w = getOverlayWindow();
-  if (!w) return;
+  if (!w || peekLocked) return;
   const b = w.getBounds();
   const displayId = screen.getDisplayMatching(b).id;
   const cur = getSettings().position;
@@ -74,7 +75,7 @@ function applyBounds(r: Rectangle): void {
 /** Re-clamp into the work area of whichever display the window is on. */
 function reclamp(): void {
   const w = getOverlayWindow();
-  if (!w) return;
+  if (!w || peekLocked) return;
   const b = w.getBounds();
   const area = screen.getDisplayMatching(b).workArea;
   const next = clampRect(b, area);
@@ -159,6 +160,26 @@ export function createOverlayWindow(): BrowserWindow {
     if (next.opacity !== prev.opacity) getOverlayWindow()?.setOpacity(next.opacity);
   });
   return win;
+}
+
+/**
+ * Peek: move the window (partly off-screen) without clamping/persisting. `rect` null restores
+ * `restore` (the pre-peek bounds, clamped to its display).
+ */
+export function setPeekBounds(rect: Rectangle | null, restore?: Rectangle): void {
+  const w = getOverlayWindow();
+  if (!w) return;
+  if (rect) {
+    peekLocked = true;
+    w.setBounds(rect, false);
+    return;
+  }
+  peekLocked = false;
+  if (restore) {
+    const { width, height } = overlaySize(getSettings().scale);
+    const target = { ...restore, width, height };
+    w.setBounds(clampRect(target, screen.getDisplayMatching(restore).workArea), false);
+  }
 }
 
 /* ---- IPC-facing controls ---- */

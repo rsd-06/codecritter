@@ -1,5 +1,6 @@
 import { app, dialog, ipcMain } from 'electron';
-import { readFile, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { IPC } from '../shared/ipc';
 import type {
   AgentEvent,
@@ -9,11 +10,15 @@ import type {
   Settings,
 } from '../shared/types';
 import { initAutostart } from './autostart';
-import { getAgentApi, pomodoroCommand } from './hooks';
+import { getAgentApi, pomodoroCommand, registerAgentApi } from './hooks';
+import { prepareHookCmd } from './hookCmd';
+import { startPeek, stopPeek } from './peek';
+import { startScheduler, stopScheduler } from './scheduler';
+import { exportToFile, importFromFile, SyncFolder } from './sync';
 import { startCursorPoller, stopCursorPoller } from './input/cursor';
 import { startInputMonitor, stopInputMonitor } from './input/monitor';
 import { registerShortcuts, unregisterShortcuts } from './shortcuts';
-import { getSettings, loadSettings, updateSettings } from './store';
+import { getSettings, onSettingsChanged, updateSettings } from './store';
 import { createTray, popupMenu } from './tray';
 import {
   broadcast,
@@ -49,29 +54,81 @@ const REMINDER_TEXT: Record<ReminderKind, string> = {
   'pomodoro-done': 'All done!',
 };
 
+/** Hook script source: bin/ in dev, resources/bin when packaged (extraResources). */
+function hookSource(): string {
+  return app.isPackaged
+    ? join(process.resourcesPath, 'bin', 'critter-hook.mjs')
+    : join(app.getAppPath(), 'bin', 'critter-hook.mjs');
+}
+
+type Handle = { close(): Promise<void> };
+let agentServer: Handle | null = null;
+let agentKey = '';
+
 /**
  * Agent bridge: HTTP server (agent C). Dynamic import in try/catch so a missing/broken
- * module never prevents the companion from starting.
+ * module never prevents the companion from starting. Restarts on enabled/port changes.
  */
-async function registerAgentBridge(): Promise<{ close(): Promise<void> } | null> {
+async function syncAgentServer(): Promise<void> {
+  const s = getSettings();
+  const key = s.agents.enabled ? String(s.agents.port) : '';
+  if (key === agentKey) return;
+  agentKey = key;
+  const old = agentServer;
+  agentServer = null;
+  await old?.close().catch(() => undefined);
+  if (!key) return;
   try {
-    const s = getSettings();
-    if (!s.agents.enabled) return null;
     const [{ startAgentServer }, { ensureToken }] = await Promise.all([
       import('./agents/server'),
       import('./agents/token'),
     ]);
     const token = await ensureToken();
-    return await startAgentServer({
+    const handle = await startAgentServer({
       port: s.agents.port,
       token,
       onEvent: (e: AgentEvent) => broadcast(IPC.agent, e),
     });
+    if (agentKey === key) agentServer = handle;
+    else await handle.close();
   } catch (err) {
+    agentKey = '';
     console.warn('[agents] bridge unavailable:', (err as Error).message);
-    return null;
   }
 }
+
+async function registerAgentInstallers(): Promise<void> {
+  try {
+    const { AGENT_INSTALLERS, agentStatusAll } = await import('./agents/installers');
+    const home = homedir();
+    const hookCmd = (): Promise<string[]> =>
+      prepareHookCmd({ dir: join(home, '.codecritter'), hookSource: hookSource() }).then(
+        (r) => r.hookCmd,
+      );
+    // refresh the copied hook script on every launch (keeps it in sync with the app version)
+    void hookCmd().catch((e: Error) => console.warn('[agents] hook script:', e.message));
+    registerAgentApi({
+      status: () => agentStatusAll(home),
+      install: async (id) => {
+        const inst = AGENT_INSTALLERS[id];
+        if (!inst) return { ok: false, message: `Unknown agent ${id}` };
+        return inst.install(home, await hookCmd());
+      },
+      uninstall: async (id) => {
+        const inst = AGENT_INSTALLERS[id];
+        if (!inst) return { ok: false, message: `Unknown agent ${id}` };
+        return inst.uninstall(home);
+      },
+    });
+  } catch (err) {
+    console.warn('[agents] installers unavailable:', (err as Error).message);
+  }
+}
+
+const sync = new SyncFolder({
+  getSettings,
+  apply: (next) => updateSettings(next),
+});
 
 function registerIpc(): void {
   ipcMain.handle(IPC.getSettings, () => getSettings());
@@ -94,11 +151,7 @@ function registerIpc(): void {
       filters: [{ name: 'JSON', extensions: ['json'] }],
     });
     if (!filePath) return null;
-    const s = getSettings();
-    await writeFile(
-      filePath,
-      JSON.stringify({ ...s, agents: { ...s.agents, token: '' } }, null, 2),
-    );
+    await exportToFile(filePath, getSettings());
     return filePath;
   });
   ipcMain.handle(IPC.importSettings, async () => {
@@ -108,18 +161,10 @@ function registerIpc(): void {
     });
     const file = r.filePaths[0];
     if (!file) return false;
-    try {
-      const imported = loadSettings(JSON.parse(await readFile(file, 'utf8')));
-      // keep machine-local bits
-      updateSettings({
-        ...imported,
-        position: getSettings().position,
-        agents: getSettings().agents,
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    const next = await importFromFile(file, getSettings());
+    if (!next) return false;
+    updateSettings(next);
+    return true;
   });
   // overlay
   ipcMain.on(IPC.setInteractive, (_e, on: boolean) => setInteractive(!!on));
@@ -134,7 +179,6 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.dock?.hide();
-  let agentServer: { close(): Promise<void> } | null = null;
   app.on('second-instance', () => openSettings());
   app.whenReady().then(async () => {
     getSettings(); // load + migrate
@@ -145,7 +189,17 @@ if (!app.requestSingleInstanceLock()) {
     initAutostart();
     startInputMonitor();
     startCursorPoller();
-    agentServer = await registerAgentBridge();
+    startScheduler();
+    startPeek();
+    await registerAgentInstallers();
+    await syncAgentServer();
+    onSettingsChanged((next, prev) => {
+      if (next.agents.enabled !== prev.agents.enabled || next.agents.port !== prev.agents.port)
+        void syncAgentServer();
+      if (next.syncFolder !== prev.syncFolder) void sync.setFolder(next.syncFolder);
+      else sync.settingsChanged();
+    });
+    void sync.setFolder(getSettings().syncFolder);
     if (process.env['CRITTER_METRICS']) {
       setTimeout(() => {
         const m = app.getAppMetrics();
@@ -167,6 +221,9 @@ if (!app.requestSingleInstanceLock()) {
     unregisterShortcuts();
     stopInputMonitor();
     stopCursorPoller();
+    stopScheduler();
+    stopPeek();
+    sync.stop();
     void agentServer?.close();
   });
   app.on('window-all-closed', () => {
