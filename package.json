@@ -1,7 +1,28 @@
 {
   "name": "codecritter",
   "version": "0.1.0",
-  "description": "Open-source pixel desktop companion (Stitch & Yoda) for developers",
+  "description": "Open-source pixel desktop companion (Stitch & Yoda) that reacts to your typing, your coding agents and your breaks",
+  "keywords": [
+    "desktop-pet",
+    "pixel-art",
+    "electron",
+    "companion",
+    "pomodoro",
+    "claude-code",
+    "codex",
+    "ai-agents",
+    "developer-tools",
+    "overlay"
+  ],
+  "homepage": "https://github.com/rsd-06/codecritter#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rsd-06/codecritter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rsd-06/codecritter/issues"
+  },
+  "author": "rsd-06",
   "license": "MIT",
   "private": true,
   "main": "out/main/index.js",
