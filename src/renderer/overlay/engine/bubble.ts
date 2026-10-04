@@ -48,7 +48,7 @@ export class BubbleView {
   }
 
   /** Draw with bottom-centre tail point at (ax, ay). */
-  draw(ctx: CanvasRenderingContext2D, ax: number, ay: number, stageW: number): void {
+  draw(ctx: CanvasRenderingContext2D, ax: number, ay: number, stageW: number, minX = 1): void {
     if (!this.active) return;
     const { lines, w, h } = this.block;
     const padX = 4;
@@ -66,7 +66,7 @@ export class BubbleView {
     ctx.scale(k, k);
     let x = -Math.round(bw / 2);
     const worldX = ax + x * k;
-    if (worldX < 1) x += Math.ceil((1 - worldX) / k);
+    if (worldX < minX) x += Math.ceil((minX - worldX) / k);
     if (ax + (x + bw) * k > stageW - 1) x -= Math.ceil((ax + (x + bw) * k - (stageW - 1)) / k);
     const y = -tail - bh;
     const c = this.kind === 'speech' ? 1 : 2; // corner cut

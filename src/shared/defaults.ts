@@ -52,7 +52,7 @@ export const DEFAULT_SETTINGS: Settings = {
   messages: [],
   pinnedNote: '',
   dnd: { enabled: false, from: '22:00', to: '08:00' },
-  peek: { auto: true, edge: 'right' },
+  peek: { auto: true, edge: 'bottom' },
   agents: { enabled: true, port: AGENT_PORT, token: '' },
   autostart: false,
   syncFolder: null,

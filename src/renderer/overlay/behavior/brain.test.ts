@@ -780,20 +780,21 @@ describe('Brain: curious, surprised, late night, peek', () => {
     expect(r.log.bubbles.length).toBe(1);
   });
 
-  it('peek: sneaky, head pushed below the stage edge, reminders still show', () => {
+  it('peek: sneaky, head pushed to the screen edge, reminders still show', () => {
     const r = rig();
     r.brain.handlePeek(true);
     r.advance(2);
     expect(r.brain.stateId).toBe('peek');
     expect(r.brain.i.expression).toBe('sneaky');
-    expect(r.pose.offsetY).toBeGreaterThanOrEqual(20);
+    expect(r.pose.peek).toBeGreaterThanOrEqual(0.9);
+    expect(r.pose.peekEdge).toBe('bottom');
     r.brain.handleReminder({ kind: 'water', text: '', durationMs: 4000 });
     expect(r.log.bubbles.length).toBe(1);
     r.advance(0.3);
     expect(r.brain.stateId).toBe('peek');
     r.brain.handlePeek(false);
     r.advance(3);
-    expect(r.pose.offsetY).toBe(0);
+    expect(r.pose.peek).toBe(0);
     expect(r.brain.stateId).toBe('idle');
   });
 

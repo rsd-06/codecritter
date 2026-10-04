@@ -95,6 +95,9 @@ export interface PoseState {
   prop?: PropName;
   /** 0..1, paper roll length / generic prop progress */
   propProgress?: number;
+  /** peek amount 0 (not peeking) .. 1 (fully peeking); see engine/peek.ts */
+  peek: number;
+  peekEdge: 'left' | 'right' | 'bottom';
 }
 
 export interface Character {
@@ -120,6 +123,8 @@ export function defaultPoseState(): PoseState {
     offsetX: 0,
     offsetY: 0,
     scale: 1,
+    peek: 0,
+    peekEdge: 'bottom',
   };
 }
 

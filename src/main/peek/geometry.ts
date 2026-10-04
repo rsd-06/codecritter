@@ -1,3 +1,5 @@
+import { PEEK_VISIBLE_FRACTION } from '../../shared/constants';
+
 export interface Rect {
   x: number;
   y: number;
@@ -6,12 +8,12 @@ export interface Rect {
 }
 export type PeekEdge = 'left' | 'right' | 'bottom';
 
-/** Fraction of the stage that stays visible while peeking. */
-export const PEEK_VISIBLE = 0.35;
+/** Fraction of the stage that stays visible while peeking (shared with the renderer). */
+export const PEEK_VISIBLE = PEEK_VISIBLE_FRACTION;
 
 /**
- * Where to put the overlay so only the top ~35% of the stage shows at `edge` of `display`.
- * bottom: slide down (top 35% visible). left/right: slide sideways (the 35% nearest the
+ * Where to put the overlay so only the top PEEK_VISIBLE of the stage shows at `edge` of `display`.
+ * bottom: slide down (top PEEK_VISIBLE visible). left/right: slide sideways (the PEEK_VISIBLE share nearest the
  * screen interior stays visible). x/y are kept inside the display on the other axis.
  */
 export function peekRect(win: Rect, display: Rect, edge: PeekEdge, visible = PEEK_VISIBLE): Rect {

@@ -1,3 +1,4 @@
+import { PEEK_VISIBLE_FRACTION } from '../../shared/constants';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FullscreenDetector, peekForQuns, QUNS, type ActiveWin } from './detector';
 import { isFullscreenOn, isShellOwner, peekRect } from './geometry';
@@ -8,18 +9,18 @@ const win = { x: 1500, y: 800, width: 256, height: 224 };
 describe('geometry', () => {
   it('bottom peek shows top 35% at the bottom edge', () => {
     const r = peekRect(win, display, 'bottom');
-    expect(r.y).toBe(1080 - Math.round(224 * 0.35));
+    expect(r.y).toBe(1080 - Math.round(224 * PEEK_VISIBLE_FRACTION));
     expect(r.x).toBe(1500);
     expect(r.width).toBe(256);
   });
   it('left/right slide to the screen edge', () => {
-    expect(peekRect(win, display, 'right').x).toBe(1920 - Math.round(256 * 0.35));
-    expect(peekRect(win, display, 'left').x).toBe(-Math.round(256 * 0.65));
+    expect(peekRect(win, display, 'right').x).toBe(1920 - Math.round(256 * PEEK_VISIBLE_FRACTION));
+    expect(peekRect(win, display, 'left').x).toBe(-Math.round(256 * (1 - PEEK_VISIBLE_FRACTION)));
   });
   it('respects display offset (second monitor)', () => {
     const d2 = { x: 1920, y: 0, width: 1280, height: 720 };
     const r = peekRect({ x: 2000, y: 400, width: 128, height: 112 }, d2, 'bottom');
-    expect(r.y).toBe(720 - Math.round(112 * 0.35));
+    expect(r.y).toBe(720 - Math.round(112 * PEEK_VISIBLE_FRACTION));
   });
   it('fullscreen detection tolerates 2px and rejects maximized-with-taskbar', () => {
     expect(isFullscreenOn({ x: -1, y: 0, width: 1922, height: 1080 }, display)).toBe(true);

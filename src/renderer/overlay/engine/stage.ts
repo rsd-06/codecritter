@@ -1,6 +1,7 @@
 // Pixel stage: 128x112 logical canvas, integer-scaled presentation, layered compositing, hit-test.
 import { BubbleView } from './bubble';
 import { ParticleSystem } from './particles';
+import { peekPlacement } from './peek';
 import {
   BOX,
   BOX_X,
@@ -74,12 +75,20 @@ export class Stage {
   /** Where speech bubbles point (stage coords), follows hops and growth. */
   get bubbleAnchor(): { x: number; y: number } {
     const p = this.pose;
+    if (p.peek > 0) {
+      const pl = peekPlacement(p.peekEdge, p.peek);
+      return { x: pl.headX, y: pl.headY };
+    }
     const top = BOX_Y + 62 - 58 * p.scale * p.squashY + p.offsetY;
     return { x: BOX_X + BOX / 2 + p.offsetX, y: Math.max(26, Math.round(top) - 1) };
   }
 
   /** Head centre in stage coords (particles spawn relative to this). */
   get head(): { x: number; y: number } {
+    if (this.pose.peek > 0) {
+      const pl = peekPlacement(this.pose.peekEdge, this.pose.peek);
+      return { x: pl.headX, y: pl.headY + 8 };
+    }
     return { x: BOX_X + BOX / 2 + this.pose.offsetX, y: BOX_Y + 28 + this.pose.offsetY };
   }
 
@@ -89,7 +98,7 @@ export class Stage {
 
     // ground shadow (shrinks while airborne)
     const air = Math.max(0, -this.pose.offsetY);
-    const peeking = this.pose.offsetY > 12; // sunk below the edge: no ground shadow
+    const peeking = this.pose.peek > 0.05; // at the screen edge: no ground shadow
     const sw = Math.max(8, Math.round(18 * this.pose.scale - air * 0.4));
     if (!peeking) {
       b.fillStyle = 'rgba(0,0,0,0.22)';
@@ -101,7 +110,15 @@ export class Stage {
     const l = this.layer;
     l.clearRect(0, 0, STAGE_W, STAGE_H);
     l.save();
-    l.translate(BOX_X, BOX_Y);
+    if (this.pose.peek > 0) {
+      const pl = peekPlacement(this.pose.peekEdge, this.pose.peek);
+      if (pl.rot === 0) l.translate(BOX_X, BOX_Y + pl.y);
+      else {
+        l.translate(pl.x, pl.y);
+        l.rotate(pl.rot);
+        l.translate(-BOX / 2, -BOX / 2);
+      }
+    } else l.translate(BOX_X, BOX_Y);
     this.character.draw(l, this.pose, t);
     l.restore();
     b.drawImage(this.layerCanvas, 0, 0);
@@ -110,7 +127,8 @@ export class Stage {
     if (this.note) drawNote(b, this.note, STAGE_W - NOTE_W - 3, 4, this.bubble.active ? 0.35 : 1);
     if (this.pomodoro) drawPomodoro(b, this.pomodoro, STAGE_W - 31, STAGE_H - 52);
     const a = this.bubbleAnchor;
-    this.bubble.draw(b, a.x, a.y, STAGE_W);
+    const band = this.pose.peek > 0 ? peekPlacement(this.pose.peekEdge, this.pose.peek) : null;
+    this.bubble.draw(b, a.x, a.y, band ? band.maxX + 1 : STAGE_W, band ? band.minX : 1);
 
     this.view.imageSmoothingEnabled = false;
     this.view.clearRect(0, 0, this.canvas.width, this.canvas.height);

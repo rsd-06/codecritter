@@ -1,4 +1,5 @@
 // Browser playground: live overlay on a fake desktop + a control panel that drives every event.
+import { PEEK_VISIBLE_FRACTION } from '@shared/constants';
 import { DEFAULT_PALETTES } from '@shared/defaults';
 import type { AgentEventType, AgentId, CharacterId, Palette, ReminderKind, Settings } from '@shared/types';
 import { MockBridge } from '../overlay/bridge';
@@ -202,8 +203,34 @@ btn(timerRow, 'pause', () =>
 );
 btn(timerRow, 'stop', () => bridge.emitPomodoro({ phase: 'idle' }));
 const peekRow = row(rem, 'peek', 'chips');
-btn(peekRow, 'peek on', () => bridge.emitPeek(true));
-btn(peekRow, 'peek off', () => bridge.emitPeek(false));
+// The real overlay window is slid partly off-screen by main; emulate that by clipping the canvas.
+let peekOn = false;
+function clipPeek(): void {
+  const c = overlay.stage.canvas;
+  const hide = `${(1 - PEEK_VISIBLE_FRACTION) * 100}%`;
+  const edge = bridge.settings.peek.edge;
+  c.style.clipPath = !peekOn
+    ? ''
+    : edge === 'bottom'
+      ? `inset(0 0 ${hide} 0)`
+      : edge === 'right'
+        ? `inset(0 ${hide} 0 0)`
+        : `inset(0 0 0 ${hide})`;
+}
+select(peekRow, ['bottom', 'left', 'right'] as const, bridge.settings.peek.edge, (v) => {
+  bridge.emitSettings({ peek: { ...bridge.settings.peek, edge: v } });
+  clipPeek();
+});
+btn(peekRow, 'peek on', () => {
+  peekOn = true;
+  clipPeek();
+  bridge.emitPeek(true);
+});
+btn(peekRow, 'peek off', () => {
+  peekOn = false;
+  bridge.emitPeek(false);
+  setTimeout(clipPeek, 700);
+});
 
 /* ------------------------------------------------------------------ simulated input */
 const inp = section('Simulated input');

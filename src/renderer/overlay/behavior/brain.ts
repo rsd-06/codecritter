@@ -42,7 +42,6 @@ export const HUNT_SPEED_LOGICAL = 600; // cursor speed (logical px/s)
 export const HUNT_NEAR_LOGICAL = 110;
 export const FAST_MOUSE_PX_S = 2500; // global mouse speed -> surprised
 export const KEY_ACTIVE_S = 1.2;
-export const PEEK_OFFSET_Y = 24;
 const STALE_KPS_S = 2.5;
 
 /** Effects the brain asks the host to perform. Stage + SoundEngine satisfy this structurally. */
@@ -499,7 +498,7 @@ export class Brain {
       this.reminder.kind = null;
       this.dragging = false;
     }
-    this.peekSpring.target = on ? PEEK_OFFSET_Y : 0;
+    this.peekSpring.target = on ? 1 : 0;
     this.wakeFn();
   }
 
@@ -709,7 +708,7 @@ export class Brain {
     // springs
     this.growSpring.target = i.grow;
     this.lean.target = i.slideX;
-    this.peekSpring.target = this.peeking ? PEEK_OFFSET_Y : 0;
+    this.peekSpring.target = this.peeking ? 1 : 0;
     this.sqx.step(dt);
     this.sqy.step(dt);
     this.lean.step(dt);
@@ -748,7 +747,9 @@ export class Brain {
     sp.squashY = q(this.sqy.value, 1 / 32);
     sp.scale = q(this.growSpring.value, 1 / 32);
     sp.offsetX = Math.round(this.lean.value + i.wiggleX);
-    sp.offsetY = hopY + i.offY + Math.round(this.peekSpring.value);
+    sp.offsetY = hopY + i.offY;
+    sp.peek = Math.round(Math.min(1, Math.max(0, this.peekSpring.value)) * 32) / 32;
+    sp.peekEdge = this.settings.peek.edge;
     sp.tint = this.tint.amount > 0 ? this.tint : undefined;
   }
 
