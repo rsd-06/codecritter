@@ -56,7 +56,7 @@ function buildFeet(): Part {
   });
   b.underShade('b', 's');
   b.both(() => {
-    b.set(21, 60, 'W').set(24, 61, 'W').set(27, 61, 'W');
+    b.set(21, 61, 'W').set(23, 61, 'W').set(25, 61, 'W');
   });
   return makePart(b.rows());
 }

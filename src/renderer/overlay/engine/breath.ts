@@ -22,11 +22,18 @@ export function breathFrame(pose: PoseName, t: number): number {
   return s.frames[Math.min(i, s.frames.length - 1)]!;
 }
 
-/** Seconds until breathFrame changes (Infinity for poses that do not breathe). */
+/** Seconds until breathFrame actually changes (Infinity for poses that do not breathe). */
 export function timeToBreathChange(pose: PoseName, t: number): number {
   const s = SPECS[pose];
   if (!s) return Infinity;
   const slot = s.period / s.frames.length;
+  const cur = breathFrame(pose, t);
   const within = ((t % slot) + slot) % slot;
-  return Math.max(0.02, slot - within);
+  let wait = slot - within;
+  for (let i = 1; i <= s.frames.length; i++) {
+    if (breathFrame(pose, t + wait + 1e-6) !== cur) return Math.max(0.02, wait);
+    wait += slot;
+    void i;
+  }
+  return Infinity;
 }

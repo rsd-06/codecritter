@@ -14,15 +14,17 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 
 ## P1 Core
 ### A. Character engine [agent-A] — owns `src/renderer/overlay/**`, `src/renderer/playground/**`
-- [ ] Pixel renderer (64×64 logical, integer scale, no smoothing), main loop w/ fixed dt, pause when hidden
-- [ ] Part-based rig format + compiler (text grid + palette → ImageBitmap cache), unit tests
-- [ ] Stitch rig: big ears, blue body, light-blue belly, dark eye patches, all mouths/paw poses/props
-- [ ] Yoda rig: green, long pointed ears, robe, cane, wrinkles, all mouths/paw poses/props
-- [ ] Procedural pupils (eye-follow), blink, breathing idle
-- [ ] Effects: squash/stretch spring, tint (overheat), scale-up (stretch), hop, particles (steam, hearts, Zzz, sparkles), paper roll
-- [ ] Speech bubble (pixel font), thought bubble, pinned note, pomodoro timer widget
-- [ ] WebAudio synth sounds per character (chirp/gibberish for Stitch, hum for Yoda), volume
-- [ ] Mock bridge + playground page with buttons/sliders for every event
+- [x] Pixel renderer (64×64 logical, integer scale, no smoothing), main loop w/ fixed dt, pause when hidden
+- [x] Part-based rig format + compiler (text grid + palette → ImageBitmap cache), unit tests
+- [x] Stitch rig: big ears, blue body, light-blue belly, dark eye patches, all mouths/paw poses/props
+- [x] Yoda rig: green, long pointed ears, robe, cane, wrinkles, all mouths/paw poses/props
+- [x] Procedural pupils (eye-follow), blink, breathing idle
+- [x] Effects: squash/stretch spring, tint (overheat), scale-up (stretch), hop, particles (steam, hearts, Zzz, sparkles), paper roll
+- [x] Speech bubble (pixel font), thought bubble, pinned note, pomodoro timer widget
+- [x] WebAudio synth sounds per character (chirp/gibberish for Stitch, hum for Yoda), volume
+- [x] Mock bridge + playground page with buttons/sliders for every event
+- [x] Expression system (18 presets x 2 characters, ear poses, blink-on-change) + expression gallery page
+- [x] Dirty-flag scheduler (~12 fps max, ~1-2 redraws/s idle), pooled particles, audio context suspend
 
 ### B. Main process shell [agent-B] — owns `src/main/{index,store,tray,shortcuts,autostart}.ts`, `src/main/windows/**`, `src/main/input/**`, `src/preload/**`
 - [x] Single-instance, app lifecycle, no dock icon on mac (tray app)

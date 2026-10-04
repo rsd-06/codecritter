@@ -484,7 +484,7 @@ function drawExtras(
       ctx.fillStyle = C['W']!;
       ctx.globalAlpha = 0.85;
       for (const side of [-1, 1] as const) {
-        const x = 32 + side * 20 + (side > 0 ? -1 : -2) + dx;
+        const x = 32 + side * 16 + (side > 0 ? -1 : -2) + dx;
         ctx.fillRect(x, 12 + dy - k * 2, 3, 2);
         ctx.fillRect(x + 1, 8 + dy - k * 2, 2, 2);
       }
@@ -532,7 +532,9 @@ export function createRigCharacter(def: RigDef, initial: Palette): Character {
       sctx.clearRect(0, 0, 64, 64);
 
       // ears (behind head), follow the head
-      const ear = def.ears[ex.ears];
+      // raised arms need clear space: fold the ears back while stretching
+      const earPose = st.paws === 'up' && (ex.ears === 'neutral' || ex.ears === 'perk') ? 'back' : ex.ears;
+      const ear = def.ears[earPose];
       blit(ear.L, hdx, headDy);
       blit(ear.R, hdx, headDy);
 
