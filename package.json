@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "playground": "vite --config vite.playground.config.ts",
-    "dist": "electron-vite build && electron-builder"
+    "dist": "electron-vite build && electron-builder",
+    "sprites:export": "esbuild tools/sprite-export.ts --bundle --platform=node --format=esm --alias:@shared=./src/shared --outfile=tools/out/.sprite-export.mjs --log-level=warning && node tools/out/.sprite-export.mjs"
   },
   "dependencies": {
     "electron-store": "^8.2.0",
