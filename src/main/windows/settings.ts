@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron';
 import { join } from 'node:path';
+import { lockNavigation } from './links';
 import { loadPage } from './overlay';
 
 let win: BrowserWindow | null = null;
@@ -29,6 +30,7 @@ export function openSettings(): void {
       spellcheck: false,
     },
   });
+  lockNavigation(win.webContents);
   win.once('ready-to-show', () => {
     win?.show();
     win?.focus();

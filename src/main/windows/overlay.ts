@@ -1,6 +1,7 @@
 import { BrowserWindow, screen, type Rectangle } from 'electron';
 import { join } from 'node:path';
 import type { Settings } from '../../shared/types';
+import { lockNavigation } from './links';
 import { getSettings, onSettingsChanged, updateSettings } from '../store';
 
 /** Logical stage (agent A's renderer uses 128x112 px per scale unit). */
@@ -122,6 +123,7 @@ export function createOverlayWindow(): BrowserWindow {
       sandbox: true,
     },
   });
+  lockNavigation(win.webContents);
   win.setAlwaysOnTop(true, 'screen-saver');
   if (process.platform === 'darwin')
     win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
