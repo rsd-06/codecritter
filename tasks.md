@@ -34,10 +34,10 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [ ] Preload bridges per contract
 
 ### C. Agent integration [agent-C] — owns `src/main/agents/**`, `bin/**`, `docs/agents.md`
-- [ ] Loopback HTTP server w/ token, rate limit, validation, tests
-- [ ] `bin/critter-hook.mjs` zero-dep CLI (stdin JSON parse, 300ms timeout, always exit 0)
-- [ ] Installers + uninstallers: claude-code, codex, cursor, gemini/antigravity, kiro, copilot, opencode — tests w/ temp HOME
-- [ ] docs/agents.md (manual setup + generic curl for Devin/others)
+- [x] Loopback HTTP server w/ token, rate limit, validation, tests
+- [x] `bin/critter-hook.mjs` zero-dep CLI (stdin JSON parse, 300ms timeout, always exit 0)
+- [x] Installers + uninstallers: claude-code, codex, cursor, gemini/antigravity, kiro, copilot, opencode — tests w/ temp HOME
+- [x] docs/agents.md (manual setup + generic curl for Devin/others)
 
 ## P2 Features
 ### D. Behaviour [agent-D] — owns `src/renderer/overlay/behavior/**`
