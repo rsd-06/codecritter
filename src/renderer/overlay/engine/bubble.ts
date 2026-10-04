@@ -4,6 +4,7 @@ import { LINE_H, drawText, layoutText, type TextBlock } from './font';
 const INK = '#2a2540';
 const PAPER = '#fffdf4';
 const MAX_TEXT_W = 100;
+const MAX_LINES = 2;
 const CPS = 36; // typewriter chars per second
 
 export type BubbleKind = 'speech' | 'thought';
@@ -18,8 +19,8 @@ export class BubbleView {
 
   show(kind: BubbleKind, text: string, ttlMs: number): void {
     this.kind = kind;
-    this.text = text;
-    this.block = layoutText(text, MAX_TEXT_W);
+    this.block = layoutText(text, MAX_TEXT_W, MAX_LINES);
+    this.text = this.block.lines.join(' ');
     this.age = 0;
     this.ttl = ttlMs / 1000;
     this.active = true;
@@ -61,6 +62,9 @@ export class BubbleView {
     if (this.age < 0.25) k = [0.5, 0.75, 0.9, 1.1, 1][Math.min(4, Math.floor(this.age / 0.05))]!;
     else if (left < 0.35) k = left < 0.12 ? 0.5 : left < 0.24 ? 0.75 : 0.9;
     const tail = this.kind === 'speech' ? 2 : 8;
+    // keep the whole bubble inside the stage even when scaled up (pop-in / 1.4x stretch)
+    const topWorld = ay - (tail + bh) * k;
+    if (topWorld < 1) ay += Math.ceil(1 - topWorld);
     ctx.save();
     ctx.translate(ax, ay);
     ctx.scale(k, k);

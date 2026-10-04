@@ -183,8 +183,18 @@ export interface TextBlock {
   h: number;
 }
 
-export function layoutText(text: string, maxW: number): TextBlock {
-  const lines = wrapText(text, maxW);
+/** Cap wrapped lines to `maxLines`; the last kept line ends with "..." (fits within maxW). */
+export function clampLines(lines: string[], maxLines: number, maxW: number): string[] {
+  if (lines.length <= maxLines) return lines;
+  const out = lines.slice(0, maxLines);
+  let last = `${out[maxLines - 1]!.trimEnd()}...`;
+  while (last.length > 3 && textWidth(last) > maxW) last = `${last.slice(0, -4).trimEnd()}...`;
+  out[maxLines - 1] = last;
+  return out;
+}
+
+export function layoutText(text: string, maxW: number, maxLines = Infinity): TextBlock {
+  const lines = clampLines(wrapText(text, maxW), maxLines, maxW);
   const w = Math.max(...lines.map(textWidth), 0);
   return { lines, w, h: lines.length * LINE_H - (LINE_H - 7) };
 }

@@ -36,3 +36,14 @@ describe('font', () => {
     expect(b.w).toBeGreaterThan(20);
   });
 });
+
+describe('layoutText maxLines', () => {
+  it('caps at 2 lines with an ellipsis that still fits', () => {
+    const long = 'Claude Code, Codex, Cursor, Gemini and Copilot are all thinking about something quite long';
+    const b = layoutText(long, 100, 2);
+    expect(b.lines.length).toBe(2);
+    expect(b.lines[1]!.endsWith('...')).toBe(true);
+    expect(textWidth(b.lines[1]!)).toBeLessThanOrEqual(100);
+    expect(layoutText('short', 100, 2).lines).toEqual(['short']);
+  });
+});
