@@ -2,7 +2,11 @@ import { screen } from 'electron';
 import { isPeeking, onStateChange, setPeek } from '../hooks';
 import { getSettings, onSettingsChanged } from '../store';
 import { getOverlayWindow, setPeekBounds } from '../windows/overlay';
-import { activeWindowOrUndefined, FullscreenDetector } from './detector';
+import {
+  activeWindowOrUndefined,
+  FullscreenDetector,
+  queryUserNotificationState,
+} from './detector';
 import { peekRect, type PeekEdge, type Rect } from './geometry';
 
 let home: Rect | null = null; // overlay bounds before peeking
@@ -46,6 +50,7 @@ function syncDetector(): void {
   if (auto && !detector) {
     detector = new FullscreenDetector({
       getActive: activeWindowOrUndefined,
+      queryState: queryUserNotificationState,
       getDisplayBounds: displayBoundsForDetector,
       onChange: (fs) => {
         if (fs) {

@@ -26,12 +26,12 @@ function selfContainedPreload(): Plugin {
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin({ include: ['uiohook-napi', 'get-windows'] })],
+    plugins: [externalizeDepsPlugin({ include: ['uiohook-napi', 'get-windows', 'koffi'] })],
     resolve: { alias: { '@shared': shared } },
     build: {
       rollupOptions: {
         input: { index: resolve(__dirname, 'src/main/index.ts') },
-        external: ['uiohook-napi', 'get-windows'],
+        external: ['uiohook-napi', 'get-windows', 'koffi'],
       },
     },
   },

@@ -11,6 +11,7 @@ extraResources:
 asarUnpack:
   - node_modules/uiohook-napi/**
   - node_modules/get-windows/**
+  - node_modules/koffi/**
 win:
   target: [nsis, portable]
 mac:

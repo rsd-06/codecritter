@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FullscreenDetector, type ActiveWin } from './detector';
+import { FullscreenDetector, peekForQuns, QUNS, type ActiveWin } from './detector';
 import { isFullscreenOn, isShellOwner, peekRect } from './geometry';
 
 const display = { x: 0, y: 0, width: 1920, height: 1080 };
@@ -67,5 +67,36 @@ describe('FullscreenDetector', () => {
     await vi.advanceTimersByTimeAsync(6000);
     d.stop();
     expect(changes).toEqual([]);
+  });
+});
+
+describe('Windows user-notification state', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('maps QUNS values to peek', () => {
+    expect([2, 3, 4].map(peekForQuns)).toEqual([true, true, true]);
+    expect([1, 5, 6, 7, undefined].map(peekForQuns)).toEqual([false, false, false, false, false]);
+    expect(QUNS.ACCEPTS_NOTIFICATIONS).toBe(5);
+  });
+
+  it('ignores a maximized window whose bounds equal the display (auto-hide taskbar)', async () => {
+    let state: number | undefined = QUNS.ACCEPTS_NOTIFICATIONS;
+    const changes: boolean[] = [];
+    const d = new FullscreenDetector({
+      getActive: async () => ({ bounds: display, owner: { name: 'chrome.exe' } }),
+      getDisplayBounds: () => display,
+      queryState: () => state,
+      onChange: (v) => changes.push(v),
+    });
+    d.start();
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(changes).toEqual([]);
+    state = QUNS.RUNNING_D3D_FULL_SCREEN;
+    await vi.advanceTimersByTimeAsync(2000);
+    state = QUNS.QUIET_TIME;
+    await vi.advanceTimersByTimeAsync(2000);
+    d.stop();
+    expect(changes).toEqual([true, false]);
   });
 });
