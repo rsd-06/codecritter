@@ -1,0 +1,10 @@
+node_modules/
+out/
+dist/
+release/
+.venv/
+__pycache__/
+*.log
+.DS_Store
+coverage/
+.vite/
