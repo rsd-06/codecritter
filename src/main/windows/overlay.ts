@@ -2,6 +2,7 @@ import { BrowserWindow, screen, type Rectangle } from 'electron';
 import { join } from 'node:path';
 import type { Settings } from '../../shared/types';
 import { lockNavigation } from './links';
+import { clampRect, defaultRectFor } from './geometry';
 import { getSettings, onSettingsChanged, updateSettings } from '../store';
 
 /** Logical stage (agent A's renderer uses 128x112 px per scale unit). */
@@ -37,17 +38,10 @@ export function overlaySize(scale: number): { width: number; height: number } {
   return { width: Math.round(STAGE_W * scale), height: Math.round(STAGE_H * scale) };
 }
 
-/** Clamp a window rect fully inside `area` (pure). */
-export function clampRect(r: Rectangle, area: Rectangle): Rectangle {
-  const x = Math.min(Math.max(r.x, area.x), area.x + Math.max(0, area.width - r.width));
-  const y = Math.min(Math.max(r.y, area.y), area.y + Math.max(0, area.height - r.height));
-  return { x: Math.round(x), y: Math.round(y), width: r.width, height: r.height };
-}
+export { clampRect };
 
 function defaultRect(scale: number): Rectangle {
-  const { width, height } = overlaySize(scale);
-  const wa = screen.getPrimaryDisplay().workArea;
-  return { x: wa.x + wa.width - width, y: wa.y + wa.height - height, width, height };
+  return defaultRectFor(screen.getPrimaryDisplay().workArea, overlaySize(scale));
 }
 
 function restoredRect(s: Settings): Rectangle {
