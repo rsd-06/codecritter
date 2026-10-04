@@ -54,7 +54,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] Settings sync (export/import + sync folder watch)
 
 ### F. Settings UI [agent-F] — owns `src/renderer/settings/**`
-- [ ] React app: Character (pick + palette editor + presets + live preview), Reactions, Reminders, Pomodoro, Messages, Pinned note, Agents (install/uninstall/test), General (name, scale, opacity, sound, autostart, DND, peek, sync), About
+- [x] React app: Character (pick + palette editor + presets + live preview), Reactions, Reminders, Pomodoro, Messages, Pinned note, Agents (install/uninstall/test), General (name, scale, opacity, sound, autostart, DND, peek, sync), About
 
 ## P3 Ship
 - [ ] Icons via `tools/make_icons.py` (venv) from sprite export
