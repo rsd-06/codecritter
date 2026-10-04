@@ -80,6 +80,13 @@ export class ParticleSystem {
     return n;
   }
 
+  /** active particles that need frames (everything except the slow Zzz drift) */
+  get fastCount(): number {
+    let n = 0;
+    for (const p of this.pool) if (p.active && p.kind !== 'zzz') n++;
+    return n;
+  }
+
   emit(kind: ParticleKind, x: number, y: number, opts: Partial<Pick<Particle, 'vx' | 'vy' | 'life' | 'variant'>> = {}): void {
     // reuse the next free slot, else overwrite round-robin
     let p: Particle | undefined;

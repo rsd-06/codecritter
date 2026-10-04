@@ -3,14 +3,14 @@ import { DEFAULT_SETTINGS } from '@shared/defaults';
 import type { OverlayBridge, Settings } from '@shared/types';
 import { getBridge } from './bridge';
 import { createCharacter } from './characters';
-import { DemoDriver } from './demo';
+import { OverlayDriver } from './behavior/driver';
 import { Scheduler } from './engine/scheduler';
 import { SoundEngine } from './engine/sound';
 import { Stage } from './engine/stage';
 
 export interface OverlayHandle {
   stage: Stage;
-  driver: DemoDriver;
+  driver: OverlayDriver;
   scheduler: Scheduler;
   sound: SoundEngine;
   /** Re-apply settings (also called for bridge settings events). */
@@ -31,7 +31,7 @@ export function startOverlay(
   const initial = opts.settings ?? DEFAULT_SETTINGS;
   const stage = new Stage(canvas, createCharacter(initial.character, initial.palettes[initial.character]), initial.scale);
   const sound = new SoundEngine();
-  const driver = new DemoDriver(stage, sound);
+  const driver = new OverlayDriver(stage, sound);
   const scheduler = new Scheduler(driver);
   driver.setWake(() => scheduler.wake());
 

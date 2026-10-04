@@ -98,6 +98,7 @@ export class ExpressionBlender {
   private target: ExpressionName = 'neutral';
   private blinkT = -1; // <0 = not blinking, else seconds into the blink
   private untilBlink: number;
+  private autoOn = true;
 
   constructor(private rng: () => number = Math.random) {
     this.untilBlink = this.nextInterval();
@@ -118,7 +119,9 @@ export class ExpressionBlender {
     this.shown = this.target = name;
   }
 
-  update(dt: number): void {
+  /** `auto=false` pauses the idle blink timer (eyes already shut, e.g. sleeping). */
+  update(dt: number, auto = true): void {
+    this.autoOn = auto;
     if (this.blinkT >= 0) {
       const prev = this.blinkT;
       this.blinkT += dt;
@@ -130,6 +133,7 @@ export class ExpressionBlender {
       }
       return;
     }
+    if (!auto) return;
     this.untilBlink -= dt;
     if (this.untilBlink <= 0) this.blinkT = 0;
   }
@@ -151,6 +155,7 @@ export class ExpressionBlender {
 
   /** Seconds until the blender will change what is drawn on its own. */
   get nextChangeIn(): number {
-    return this.blinkT >= 0 ? 0 : Math.max(0, this.untilBlink);
+    if (this.blinkT >= 0) return 0;
+    return this.autoOn ? Math.max(0, this.untilBlink) : Infinity;
   }
 }
