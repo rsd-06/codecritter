@@ -183,7 +183,7 @@ const ARMS: ArmSpec = {
     down: { L: arm([22, 53]), R: [[39, 45], CANE_HAND] },
     'knead-L': { L: arm([26, 57]), R: mirrorArm(arm([24, 50])) },
     'knead-R': { L: arm([24, 50]), R: mirrorArm(arm([26, 57])) },
-    up: pair(arm([16, 15], [23, 44])),
+    up: pair(arm([7, 36], [23, 44])),
     'hold-cup': pair(arm([27, 49])),
     'hold-paper': pair(arm([24, 50])),
     chin: { L: arm([22, 53]), R: [[39, 45], [36, 40]] },

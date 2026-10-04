@@ -32,6 +32,7 @@ export type EyeKind =
   | 'wide'
   | 'squint'
   | 'dizzy'
+  | 'spiral'
   | 'hearts'
   | 'sparkle'
   | 'sleepy'

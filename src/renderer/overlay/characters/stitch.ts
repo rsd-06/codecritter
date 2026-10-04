@@ -192,7 +192,7 @@ export function createStitchRig(): RigDef {
     feet: buildFeet(),
     ears: buildEars(),
     mouths: buildMouths(36),
-    eye: { style: 'solid', lx: 25, rx: 39, cy: 28, hw: 4, hh: 5, baseLid: 0, browDy: 4 },
+    eye: { style: 'solid', lx: 25, rx: 39, cy: 28, hw: 4, hh: 5, baseLid: 0, browDy: 4, browKey: 'u' },
     arms: ARMS,
     poses: defaultPoses(),
     props: { cup: buildCup(), laptop: buildLaptop(), note: buildNote(), roll: buildRoll() },

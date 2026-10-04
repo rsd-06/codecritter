@@ -56,7 +56,7 @@ function render(): void {
       st.paws = (mode === 'paws' ? name : mode === 'props' && name === 'cup' ? 'hold-cup' : pawsSel.value) as PawPose;
       if (mode === 'props') {
         st.prop = name as PropName;
-        st.propProgress = 0.7;
+        st.propProgress = Number(params.get('progress') ?? 0.7);
         if (name === 'paper') st.paws = 'hold-paper';
         if (name === 'laptop') st.paws = 'knead-L';
       }

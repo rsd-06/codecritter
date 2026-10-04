@@ -41,7 +41,7 @@ export const EXPRESSIONS: Record<ExpressionName, Expression> = {
   surprised: E('wide', 'raised', 'o', 'perk'),
   love: E('hearts', 'none', 'happy', 'neutral', ['blush']),
   annoyed: E('half', 'angry', 'flat', 'back'),
-  dizzy: E('dizzy', 'none', 'wobbly', 'droop'),
+  dizzy: E('spiral', 'none', 'wobbly', 'droop'),
   stressed: E('wide', 'worried', 'wobbly', 'back', ['sweat', 'steam']),
   sleepy: E('sleepy', 'none', 'yawn', 'droop'),
   bored: E('side-eye', 'none', 'flat', 'droop'),

@@ -38,6 +38,8 @@ export interface EyeSpec {
   /** rows of lid that are always shown for an 'open' eye (Yoda: half-lidded) */
   baseLid: number;
   browDy: number;
+  /** colour key for the brows (default outline 'o'); Stitch uses a light body tone to read on his dark patches */
+  browKey?: string;
 }
 
 export interface PoseParams {
@@ -241,6 +243,16 @@ function drawSprite(ctx: CanvasRenderingContext2D, rows: string[], x: number, y:
   }
 }
 
+/** Rotating pixel spiral (dizzy eyes). Radius grows with angle; the whole thing turns with time. */
+function drawSpiral(ctx: CanvasRenderingContext2D, cx: number, cy: number, color: string, t: number): void {
+  ctx.fillStyle = color;
+  const phase = (Math.floor(t * 8) % 8) * (Math.PI / 4);
+  for (let a = 0; a < Math.PI * 4.2; a += 0.28) {
+    const r = 0.9 + a * 0.3;
+    ctx.fillRect(Math.round(cx + Math.cos(a + phase) * r - 0.5), Math.round(cy + Math.sin(a + phase) * r - 0.5), 1, 1);
+  }
+}
+
 const KIND_LID: Partial<Record<EyeKind, number>> = { half: 0.42, sleepy: 0.62, squint: 0.38 };
 
 /** Draw both eyes. Returns nothing; all procedural, pupils follow look. */
@@ -255,12 +267,13 @@ function drawEyes(
   dx: number,
   dy: number,
   mood: MouthName,
+  t: number,
 ): void {
   const cy = spec.cy + dy;
   for (const side of [-1, 1] as const) {
     const cx = (side < 0 ? spec.lx : spec.rx) + dx;
-    if (spec.style === 'solid') drawSolidEye(ctx, spec, kind, open, lookX, lookY, colors, cx, cy, side, mood);
-    else drawScleraEye(ctx, spec, kind, open, lookX, lookY, colors, cx, cy, side, mood);
+    if (spec.style === 'solid') drawSolidEye(ctx, spec, kind, open, lookX, lookY, colors, cx, cy, side, mood, t);
+    else drawScleraEye(ctx, spec, kind, open, lookX, lookY, colors, cx, cy, side, mood, t);
   }
 }
 
@@ -287,6 +300,7 @@ function drawSolidEye(
   cy: number,
   side: number,
   _mood: MouthName,
+  t: number,
 ): void {
   void side;
   const fullRx = spec.hw;
@@ -304,6 +318,10 @@ function drawSolidEye(
   if (kind === 'hearts') {
     drawSprite(ctx, HEART, Math.round(cx - 3.5), Math.round(cy - 3), C);
     px(ctx, cx - 2, cy - 2, 1, 1, C['W']!);
+    return;
+  }
+  if (kind === 'spiral') {
+    drawSpiral(ctx, cx, cy, C['W']!, t);
     return;
   }
   if (kind === 'dizzy') {
@@ -354,6 +372,7 @@ function drawScleraEye(
   cy: number,
   side: number,
   mood: MouthName,
+  t: number,
 ): void {
   const rx = spec.hw;
   const ry = spec.hh;
@@ -378,6 +397,10 @@ function drawScleraEye(
   // dark ring then sclera
   fillEllipse(ctx, cx, cy, bigRx + 1, bigRy + 1, C['o']!);
   fillEllipse(ctx, cx, cy, bigRx, bigRy, C['V']!);
+  if (kind === 'spiral') {
+    drawSpiral(ctx, cx, cy, C['e']!, t);
+    return;
+  }
   if (kind === 'dizzy') {
     ctx.fillStyle = C['e']!;
     for (let i = -2; i <= 2; i++) {
@@ -435,7 +458,7 @@ function drawBrows(
 ): void {
   if (kind === 'none') return;
   const y0 = Math.round(spec.cy + dy - spec.hh - spec.browDy);
-  ctx.fillStyle = colors['o']!;
+  ctx.fillStyle = colors[spec.browKey ?? 'o']!;
   for (const side of [-1, 1] as const) {
     const cx = Math.round((side < 0 ? spec.lx : spec.rx) + dx);
     for (let k = 0; k < 4; k++) {
@@ -565,8 +588,8 @@ export function createRigCharacter(def: RigDef, initial: Palette): Character {
 
       // face
       const eyeOpen = st.pose === 'sleep' ? 0 : st.eyes.open;
-      const kind: EyeKind = st.pose === 'sleep' && ex.eyes !== 'dizzy' ? 'closed' : ex.eyes;
-      drawEyes(sctx, def.eye, kind, eyeOpen, st.eyes.lookX, st.eyes.lookY, C, hdx, headDy, mouth);
+      const kind: EyeKind = st.pose === 'sleep' && ex.eyes !== 'dizzy' && ex.eyes !== 'spiral' ? 'closed' : ex.eyes;
+      drawEyes(sctx, def.eye, kind, eyeOpen, st.eyes.lookX, st.eyes.lookY, C, hdx, headDy, mouth, t);
       drawBrows(sctx, def.eye, ex.brows, C, hdx, headDy);
       blit(def.mouths[mouth], hdx, headDy);
       drawExtras(sctx, def, ex.extras, C, t, hdx, headDy);
@@ -577,7 +600,7 @@ export function createRigCharacter(def: RigDef, initial: Palette): Character {
       if (st.prop === 'note') blit(def.props.note, 0, bodyDy);
       if (st.prop === 'paper' || (!st.prop && st.paws === 'hold-paper')) {
         const p = st.propProgress ?? 0.5;
-        const len = 2 + Math.round(p * 6) * 2;
+        const len = 2 + Math.round(Math.min(1, Math.max(0, p)) * 5) * 2; // 2..12 rows: ends above the ground line
         blit(paperSheet(len), 0, bodyDy);
         blit(def.props.roll, 0, bodyDy);
       }
@@ -593,14 +616,17 @@ export function createRigCharacter(def: RigDef, initial: Palette): Character {
         sctx.globalCompositeOperation = 'source-over';
       }
 
-      // blit with squash/scale about the feet anchor
+      // blit with squash/scale about the feet anchor. Destination size and position snap to whole
+      // pixels so every sprite pixel stays a uniform block after the stage's integer upscale.
       const sxx = st.squashX * pp.sx * st.scale;
       const syy = st.squashY * pp.sy * st.scale;
+      const dw = Math.max(1, Math.round(64 * sxx));
+      const dh = Math.max(1, Math.round(64 * syy));
+      const dx0 = Math.round(32 + st.offsetX - dw / 2);
+      const dy0 = Math.round(FEET_Y + st.offsetY - (FEET_Y / 64) * dh);
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-      ctx.translate(32 + st.offsetX, FEET_Y + st.offsetY);
-      ctx.scale(sxx, syy);
-      ctx.drawImage(scratch, -32, -FEET_Y);
+      ctx.drawImage(scratch, dx0, dy0, dw, dh);
       ctx.restore();
     },
   };
