@@ -1,0 +1,16 @@
+appId: dev.codecritter.app
+productName: CodeCritter
+directories:
+  output: release
+files:
+  - out/**
+  - package.json
+asarUnpack:
+  - node_modules/uiohook-napi/**
+  - node_modules/get-windows/**
+win:
+  target: [nsis, portable]
+mac:
+  target: dmg
+linux:
+  target: [AppImage, deb]

@@ -5,11 +5,11 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 ## P0 Foundation  [lead + scaffold agent]
 - [x] Project dir, git, Python venv (`.venv` + Pillow)
 - [x] docs/PLAN.md, tasks.md, CLAUDE.md, MEMORY.md
-- [ ] electron-vite + TS scaffold, all deps installed, scripts (dev, build, typecheck, test, lint, playground)
-- [ ] `src/shared/{types,ipc,constants,defaults}.ts` exactly per PLAN §4
-- [ ] vitest + eslint + prettier config, `.editorconfig`, `.gitignore`, MIT LICENSE
-- [ ] Stub entrypoints so `npm run build` works; playground served by `npm run playground`
-- [ ] GitHub Actions CI (typecheck + test, ubuntu/windows/macos)
+- [x] electron-vite + TS scaffold, all deps installed, scripts (dev, build, typecheck, test, lint, playground)
+- [x] `src/shared/{types,ipc,constants,defaults}.ts` exactly per PLAN §4
+- [x] vitest + eslint + prettier config, `.editorconfig`, `.gitignore`, MIT LICENSE
+- [x] Stub entrypoints so `npm run build` works; playground served by `npm run playground`
+- [x] GitHub Actions CI (typecheck + test, ubuntu/windows/macos)
 - [ ] Public GitHub repo created + pushed
 
 ## P1 Core
