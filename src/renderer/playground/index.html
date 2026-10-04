@@ -2,25 +2,35 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CodeCritter Playground</title>
-    <style>
-      body {
-        margin: 0;
-        padding: 24px;
-        font-family: system-ui, sans-serif;
-        background: #2b2b33;
-        color: #eee;
-      }
-      canvas {
-        image-rendering: pixelated;
-        background: #444;
-      }
-    </style>
+    <link rel="stylesheet" href="./playground.css" />
   </head>
   <body>
-    <h1>CodeCritter Playground</h1>
-    <canvas id="stage" width="64" height="64"></canvas>
-    <div id="controls"></div>
+    <div class="app">
+      <div class="desk" id="desk">
+        <div class="fakewin">
+          <div class="tb"><span class="dot"></span><span class="dot" style="background: #f7d95c"></span><span class="dot" style="background: #4fbf7a"></span><span>editor.ts</span></div>
+          <pre>
+function critter(name: string) {
+  const mood = typing ? 'focused' : 'neutral';
+  return `${name} is ${mood}`;
+}
+
+// type here, scroll, move the mouse
+// the overlay reacts like the real app
+          </pre>
+        </div>
+        <div class="deskhint">fake desktop - move the mouse, type, scroll, drag the critter</div>
+        <div class="taskbar"></div>
+        <div class="stats" id="stats">...</div>
+        <div id="overlayWin"><canvas id="stage" width="256" height="224"></canvas></div>
+      </div>
+      <aside class="panel" id="panel">
+        <h1>CodeCritter playground</h1>
+        <p style="color: var(--dim); margin: 4px 0 10px"><a href="./gallery.html">expression gallery &rarr;</a></p>
+      </aside>
+    </div>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

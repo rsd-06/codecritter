@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CodeCritter Expression Gallery</title>
+    <link rel="stylesheet" href="./playground.css" />
+  </head>
+  <body class="gallery-page">
+    <header class="bar"><a href="./index.html">&larr; playground</a><h1>Expression gallery</h1>
+      <label>scale <select id="gscale"><option>2</option><option selected>3</option><option>4</option></select></label>
+      <label>pose <select id="gpose"></select></label>
+      <label>paws <select id="gpaws"></select></label>
+    </header>
+    <main id="grid"></main>
+    <script type="module" src="./gallery.ts"></script>
+  </body>
+</html>
