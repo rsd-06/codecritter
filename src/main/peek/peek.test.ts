@@ -30,17 +30,19 @@ describe('geometry', () => {
   });
 });
 
-describe('FullscreenDetector', () => {
+describe.each(['win32', 'darwin', 'linux'] as const)('FullscreenDetector (%s)', (platform) => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
   it('reports flips only, polls every 2 s, and clears on stop', async () => {
-    let active: ActiveWin | undefined = { bounds: display, owner: { name: 'game.exe' } };
+    let active: ActiveWin | undefined = { bounds: display, owner: { name: 'game.exe' }, title: 'Game' };
     const changes: boolean[] = [];
     const getActive = vi.fn(async () => active);
     const d = new FullscreenDetector({
       getActive,
       getDisplayBounds: () => display,
+      platform,
+      queryState: () => undefined,
       onChange: (v) => changes.push(v),
     });
     d.start();
@@ -48,10 +50,10 @@ describe('FullscreenDetector', () => {
     await vi.advanceTimersByTimeAsync(2000);
     expect(changes).toEqual([true]);
     expect(getActive).toHaveBeenCalledTimes(2);
-    active = { bounds: { ...display, height: 900 } };
+    active = { bounds: { ...display, height: 900 }, title: 'Game' };
     await vi.advanceTimersByTimeAsync(2000);
     expect(changes).toEqual([true, false]);
-    active = { bounds: display };
+    active = { bounds: display, title: 'Game' };
     await vi.advanceTimersByTimeAsync(2000);
     d.stop();
     expect(changes).toEqual([true, false, true, false]);
@@ -62,6 +64,7 @@ describe('FullscreenDetector', () => {
     const d = new FullscreenDetector({
       getActive: async () => undefined,
       getDisplayBounds: () => display,
+      platform,
       onChange: (v) => changes.push(v),
     });
     d.start();
@@ -85,8 +88,9 @@ describe('Windows user-notification state', () => {
     let state: number | undefined = QUNS.ACCEPTS_NOTIFICATIONS;
     const changes: boolean[] = [];
     const d = new FullscreenDetector({
-      getActive: async () => ({ bounds: display, owner: { name: 'chrome.exe' } }),
+      getActive: async () => ({ bounds: display, owner: { name: 'chrome.exe' }, title: 'x' }),
       getDisplayBounds: () => display,
+      platform: 'win32',
       queryState: () => state,
       onChange: (v) => changes.push(v),
     });
@@ -99,5 +103,24 @@ describe('Windows user-notification state', () => {
     await vi.advanceTimersByTimeAsync(2000);
     d.stop();
     expect(changes).toEqual([true, false]);
+  });
+});
+
+describe('macOS desktop', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('does not peek for a full-display window without a title (Finder desktop)', async () => {
+    const changes: boolean[] = [];
+    const d = new FullscreenDetector({
+      getActive: async () => ({ bounds: display, owner: { name: 'Finder2' }, title: '' }),
+      getDisplayBounds: () => display,
+      platform: 'darwin',
+      onChange: (v) => changes.push(v),
+    });
+    d.start();
+    await vi.advanceTimersByTimeAsync(4000);
+    d.stop();
+    expect(changes).toEqual([]);
   });
 });

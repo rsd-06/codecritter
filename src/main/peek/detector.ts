@@ -37,6 +37,8 @@ export interface DetectorDeps {
   queryState?(): number | undefined;
   /** Display the overlay lives on, in the same coordinate space as `getActive` bounds. */
   getDisplayBounds(): Rect | null;
+  /** Platform the heuristic assumes (injected for tests); defaults to process.platform. */
+  platform?: NodeJS.Platform;
   /** Called only when the fullscreen state flips. */
   onChange(fullscreen: boolean): void;
 }
@@ -72,7 +74,7 @@ export class FullscreenDetector {
         // non-shell owner and (mac) a non-empty title; the desktop/Finder has none).
         const w = await this.deps.getActive();
         const d = this.deps.getDisplayBounds();
-        const macDesktop = process.platform === 'darwin' && !w?.title?.trim();
+        const macDesktop = (this.deps.platform ?? process.platform) === 'darwin' && !w?.title?.trim();
         fs =
           !!w && !!d && !macDesktop && !isShellOwner(w.owner?.name) && isFullscreenOn(w.bounds, d);
       }
