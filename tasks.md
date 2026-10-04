@@ -48,10 +48,10 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [ ] Name personalisation in all strings (Yoda-speak variants for Yoda)
 
 ### E. Scheduler & system [agent-E] — owns `src/main/scheduler/**`, `src/main/peek/**`, `src/main/sync.ts`
-- [ ] Stretch/water interval reminders, custom messages (once/daily/weekdays), DND window — tests w/ fake timers
-- [ ] Pomodoro engine + tray/settings controls — tests
-- [ ] Peek detector (fullscreen foreground heuristic) + manual toggle
-- [ ] Settings sync (export/import + sync folder watch)
+- [x] Stretch/water interval reminders, custom messages (once/daily/weekdays), DND window — tests w/ fake timers
+- [x] Pomodoro engine + tray/settings controls — tests
+- [x] Peek detector (fullscreen foreground heuristic) + manual toggle
+- [x] Settings sync (export/import + sync folder watch)
 
 ### F. Settings UI [agent-F] — owns `src/renderer/settings/**`
 - [ ] React app: Character (pick + palette editor + presets + live preview), Reactions, Reminders, Pomodoro, Messages, Pinned note, Agents (install/uninstall/test), General (name, scale, opacity, sound, autostart, DND, peek, sync), About
