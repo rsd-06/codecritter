@@ -214,3 +214,28 @@ Installers are pure functions over a `home` dir param → fully unit-testable wi
 - Privacy: never record key identities/content; aggregate counts only. No network except loopback server.
 - Commit only your own paths (`git add <paths>`), conventional commits (`feat(engine): ...`).
 - `npm run typecheck && npm test` must pass before committing.
+
+## 3a. Expressions (activity → expression)
+Expression = eyes × brows × mouth × ears × extras (blush, sweat, tear, anger vein, steam).
+| User activity / event | Preset |
+|---|---|
+| nothing special | neutral (breathing, blinking, occasional look-around) |
+| steady typing | focused |
+| typing burst > overheat threshold | stressed (red tint, steam) |
+| cursor approaches | curious |
+| very fast mouse | surprised → hunt |
+| petting head | love (hearts, blush) |
+| dragged | excited; shaken → annoyed; shaken long → dizzy |
+| idle 2 min | bored; idle 5 min | sleepy → sleep |
+| scrolling | focused + paper unroll |
+| agent thinking / tool | thinking |
+| agent done | proud + hop |
+| agent error / attention | worried |
+| pomodoro focus / break | determined / relaxed |
+| peek mode | sneaky |
+| reminder | happy (with bubble) |
+| late night (after 23:00) typing | sleepy-eyed nudge "go to bed" bubble once/hour |
+
+## 3b. Efficiency budget
+Total working set < 150 MB, idle CPU < 1%. Overlay renders dirty-flag only (~12 fps max while animating,
+0–2 redraws/s idle). HW acceleration off by default. Settings window destroyed on close. Adaptive cursor polling.

@@ -13,3 +13,7 @@ Append-only log. Newest at the bottom. Format: `- YYYY-MM-DD [who] note`.
 - 2026-10-05 [P0] Gotcha: the two preload entries share `shared/ipc` so Rollup emits `out/preload/chunks/*.js`; a sandboxed preload cannot require relative files, so BrowserWindows use `sandbox:false` (contextIsolation stays true, nodeIntegration off). To go back to sandbox:true, make each preload self-contained (no shared chunk).
 - 2026-10-05 [P0] Gotcha: overlay `main.ts` only auto-starts when `window.critter` exists; the playground imports and calls `startOverlay` itself. `window.critter` is optional in global.d.ts for this reason.
 - 2026-10-05 [P0] Gotcha (tooling): very long Bash heredoc batches containing quotes failed to parse on this box; use the Write tool for many files.
+- 2026-10-05 [lead] User decision: proceed with Stitch & Yoda (replacing the cat); trademark question deferred.
+- 2026-10-05 [lead] Efficiency is a top requirement. Budgets: total working set < 150 MB, idle CPU < 1%, overlay idle redraws ~0-2/s (dirty-flag, ~12 fps max while animating), hardware acceleration disabled by default (CRITTER_GPU=1 re-enables), settings window destroyed on close, cursor polling adaptive (30 Hz near / 4 Hz far / off when peeking). If Electron cannot meet budget, evaluate Tauri port in P4.
+- 2026-10-05 [lead] No Blender: 2D pixel art authored in code is higher fidelity for this style and lighter at runtime than pre-rendered 3D sprites.
+- 2026-10-05 [lead] Expression system: eyes x brows x mouth x ears x extras, 18 named presets mapped to user activity (see PLAN §3a).
