@@ -76,6 +76,7 @@ export function isPeeking(): boolean {
 export function setPeek(v: boolean): void {
   if (peeking === v) return;
   peeking = v;
+  if (process.env['CRITTER_DEBUG'] === '1') console.log(`[critter] peek ${v ? 'ON' : 'off'}`);
   broadcast(IPC.peek, v);
   notify();
 }
