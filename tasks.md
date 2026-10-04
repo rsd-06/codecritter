@@ -10,7 +10,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] vitest + eslint + prettier config, `.editorconfig`, `.gitignore`, MIT LICENSE
 - [x] Stub entrypoints so `npm run build` works; playground served by `npm run playground`
 - [x] GitHub Actions CI (typecheck + test, ubuntu/windows/macos)
-- [ ] Public GitHub repo created + pushed
+- [x] Public GitHub repo created + pushed (github.com/rsd-06/codecritter)
 
 ## P1 Core
 ### A. Character engine [agent-A] — owns `src/renderer/overlay/**`, `src/renderer/playground/**`
