@@ -89,10 +89,13 @@ export class Stage {
 
     // ground shadow (shrinks while airborne)
     const air = Math.max(0, -this.pose.offsetY);
+    const peeking = this.pose.offsetY > 12; // sunk below the edge: no ground shadow
     const sw = Math.max(8, Math.round(18 * this.pose.scale - air * 0.4));
-    b.fillStyle = 'rgba(0,0,0,0.22)';
-    b.fillRect(BOX_X + 32 - sw + this.pose.offsetX * 0.3, STAGE_H - 3, sw * 2, 2);
-    b.fillRect(BOX_X + 32 - sw + 3 + this.pose.offsetX * 0.3, STAGE_H - 4, sw * 2 - 6, 1);
+    if (!peeking) {
+      b.fillStyle = 'rgba(0,0,0,0.22)';
+      b.fillRect(BOX_X + 32 - sw + this.pose.offsetX * 0.3, STAGE_H - 3, sw * 2, 2);
+      b.fillRect(BOX_X + 32 - sw + 3 + this.pose.offsetX * 0.3, STAGE_H - 4, sw * 2 - 6, 1);
+    }
 
     // character layer (also used for hit-testing)
     const l = this.layer;

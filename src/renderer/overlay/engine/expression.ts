@@ -126,7 +126,8 @@ export class ExpressionBlender {
       const prev = this.blinkT;
       this.blinkT += dt;
       if (prev < BLINK_DUR / 2 && this.blinkT >= BLINK_DUR / 2) this.shown = this.target;
-      if (this.blinkT >= BLINK_DUR) {
+      // done once the lids are (almost) back up: avoids a redraw that shows nothing new
+      if (this.blinkT >= BLINK_DUR || (this.blinkT > BLINK_DUR / 2 && this.eyeOpen >= 0.7)) {
         this.blinkT = -1;
         this.shown = this.target;
         this.untilBlink = this.nextInterval();
@@ -135,7 +136,8 @@ export class ExpressionBlender {
     }
     if (!auto) return;
     this.untilBlink -= dt;
-    if (this.untilBlink <= 0) this.blinkT = 0;
+    // start with the lids already down so the first drawn frame differs (2 redraws per blink)
+    if (this.untilBlink <= 0) this.blinkT = 0.1;
   }
 
   get current(): ExpressionName {

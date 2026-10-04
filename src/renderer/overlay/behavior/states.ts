@@ -516,6 +516,7 @@ class Sleep extends Base {
     b.i.expression = 'sleepy';
     if (e > 4) {
       b.i.pose = 'sleep';
+      b.i.mouth = 'neutral'; // no yawning while asleep
       // Zzz rides on breath ticks (no dedicated wake-ups) so sleeping stays <= ~1 redraw/s
       if (t >= this.nextZ) {
         b.emitAtHead('zzz', 14, -14, { variant: this.flip++ % 2 });

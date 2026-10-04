@@ -37,6 +37,10 @@ let lastMouse: { x: number; y: number; t: number } | null = null;
 let lastActivity = performance.now();
 let lastCursorEmit = 0;
 let quietTicks = 0;
+/** pretend the last real activity was `sec` seconds ago (idle-skip buttons); real input resets it */
+function skipIdle(sec: number): void {
+  lastActivity -= sec * 1000;
+}
 
 desk.addEventListener('pointermove', (e) => {
   const now = performance.now();
@@ -216,6 +220,79 @@ btn(row(inp), 'reset sliders', () => {
   });
 });
 
+/* ------------------------------------------------------------------ behaviour tests */
+const beh = section('Behaviour tests');
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+function headScreen(): { x: number; y: number; r: DOMRect } {
+  const r = win.getBoundingClientRect();
+  const h = overlay.stage.head;
+  return { x: r.left + (h.x / 128) * r.width, y: r.top + (h.y / 112) * r.height, r };
+}
+function sendCursor(x: number, y: number): void {
+  const r = win.getBoundingClientRect();
+  lastActivity = performance.now();
+  bridge.emitCursor({ x, y, winX: r.left, winY: r.top, winW: r.width, winH: r.height });
+}
+async function simHunt(): Promise<void> {
+  const h = headScreen();
+  const startX = h.x - h.r.width * 0.9;
+  for (let k = 0; k <= 8; k++) {
+    sendCursor(startX + k * 38, h.y + 10); // ~1250 px/s at 30 ms steps
+    await sleep(30);
+  }
+}
+async function simPetting(): Promise<void> {
+  const h = headScreen();
+  for (let k = 0; k < 24; k++) {
+    sendCursor(h.x + (k % 2 ? 18 : -18), h.y - 4);
+    await sleep(70);
+  }
+}
+async function simShake(ms: number): Promise<void> {
+  overlay.driver.dragStart();
+  const n = Math.round(ms / 50);
+  for (let k = 0; k < n; k++) {
+    overlay.driver.dragMove(k % 2 ? 22 : -22, 0);
+    await sleep(50);
+  }
+  overlay.driver.dragEnd();
+}
+async function simMultiAgent(): Promise<void> {
+  const ev = (agent: AgentId, type: AgentEventType, session: string): void =>
+    bridge.emitAgent({ agent, type, session });
+  ev('claude-code', 'thinking', 'a');
+  await sleep(800);
+  ev('codex', 'thinking', 'b');
+  await sleep(800);
+  ev('claude-code', 'tool', 'c');
+  await sleep(4000);
+  ev('claude-code', 'done', 'a');
+  await sleep(3500);
+  ev('claude-code', 'done', 'c');
+  await sleep(3500);
+  ev('codex', 'done', 'b');
+}
+const behRow = row(beh, undefined, 'chips');
+btn(behRow, 'hunt (fast cursor)', () => void simHunt());
+btn(behRow, 'petting', () => void simPetting());
+btn(behRow, 'shake drag 1s', () => void simShake(1000));
+btn(behRow, 'shake drag 3s (dizzy)', () => void simShake(3200));
+btn(behRow, 'multi-agent', () => void simMultiAgent());
+const idleRow = row(beh, 'idle skip', 'chips');
+btn(idleRow, '+2 min', () => skipIdle(120));
+btn(idleRow, '+5 min', () => skipIdle(300));
+btn(idleRow, 'wake', () => {
+  lastActivity = performance.now();
+  sim.idleSec = 0;
+});
+const lnRow = row(beh, undefined, 'chips');
+const lateOn = document.createElement('input');
+lateOn.type = 'checkbox';
+lateOn.addEventListener('change', () => overlay.driver.brain.forceHour(lateOn.checked ? 2 : null));
+const lateLabel = document.createElement('label');
+lateLabel.append(lateOn, ' late night (pretend 02:00, type to see the nudge)');
+lnRow.append(lateLabel);
+
 /* ------------------------------------------------------------------ character & look */
 const look = section('Character & look');
 let paletteTouched = false;
@@ -293,10 +370,14 @@ btn(sRow2, 'purr off', () => overlay.sound.purr(false));
 
 /* ------------------------------------------------------------------ stats + test handles */
 let lastTicks = 0;
+const recent: number[] = [];
 setInterval(() => {
   const ticks = overlay.scheduler.ticks;
   const d = overlay.driver.debug();
-  statsEl.textContent = `redraws/s ${ticks - lastTicks} | ${String(d['expression'])} | particles ${overlay.stage.particles.activeCount}`;
+  recent.push(ticks - lastTicks);
+  if (recent.length > 10) recent.shift();
+  const avg = recent.reduce((a, b) => a + b, 0) / recent.length;
+  statsEl.textContent = `redraws/s ${ticks - lastTicks} (avg10 ${avg.toFixed(1)}) | ${d.state} / ${d.expression} | idle ${Math.round(d.idleMs / 1000)}s`;
   lastTicks = ticks;
 }, 1000);
 
@@ -315,6 +396,9 @@ const handles = {
   setExpression: (n: ExpressionName, ms = 4000) => overlay.driver.force(n, ms),
   hit: (x: number, y: number) => overlay.stage.hitTest(x, y),
   state: () => overlay.driver.debug(),
+  brain: overlay.driver.brain,
+  skipIdle,
+  redrawAvg: () => recent.reduce((a, b) => a + b, 0) / Math.max(1, recent.length),
   ticks: () => overlay.scheduler.ticks,
   log: () => bridge.log,
   sim,

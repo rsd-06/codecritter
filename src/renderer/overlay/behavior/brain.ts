@@ -31,7 +31,7 @@ import { formatMMSS, type PomodoroView } from '../engine/widgets';
 import { AgentTracker } from './agents';
 import { PettingDetector, ShakeDetector } from './detectors';
 import { pick, truncate } from './strings';
-import { STATE_ORDER, PENDING_TTL_S, createStates, type BState, type StateId } from './states';
+import { BORED_AFTER_MS, STATE_ORDER, PENDING_TTL_S, createStates, type BState, type StateId } from './states';
 
 const STEP = 1 / 12;
 const SESSION_PRUNE_S = 5;
@@ -120,6 +120,8 @@ const resetIntent = (i: Intent): void => {
   i.glance = 1;
 };
 
+/** min(d, until - t) when `until` is in the future */
+const soonest = (d: number, t: number, until: number): number => (until > t ? Math.min(d, until - t) : d);
 const q = (v: number, step: number): number => Math.round(v / step) * step;
 const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
 
@@ -223,8 +225,9 @@ export class Brain {
   readonly lean = new Spring(0, 200, 12);
   readonly growSpring = new Spring(1, 120, 12);
   readonly peekSpring = new Spring(0, 110, 18);
-  private readonly lookX = new Spring(0, 220, 26);
-  private readonly lookY = new Spring(0, 220, 26);
+  private readonly lookX = new Spring(0, 420, 36);
+  private readonly lookY = new Spring(0, 420, 36);
+  private wasCurious = false;
   private hopT = -1;
   private hopCount = 0;
   private landed = false;
@@ -338,17 +341,22 @@ export class Brain {
     this.cursorAt = t;
 
     // eye follow
+    const prevQx = q(this.lookTx, 0.25);
+    const prevQy = q(this.lookTy, 0.25);
     if (this.settings.reactions.eyeFollow) {
       this.lookTx = Math.tanh(dx / (55 * ppl));
       this.lookTy = Math.tanh(dy / (55 * ppl));
     } else {
       this.lookTx = this.lookTy = 0;
     }
+    const lookChanged = q(this.lookTx, 0.25) !== prevQx || q(this.lookTy, 0.25) !== prevQy;
     this.glanceFor = 0;
     this.pushLook();
+    const prevPurr = this.purrUntil;
 
     // petting: cursor rubbing back and forth over the head
     if (this.settings.reactions.purr && this.petting.push(dx / ppl, dy / ppl, t)) this.purrUntil = t + 1.5;
+    let interesting = lookChanged || this.purrUntil !== prevPurr;
 
     // hunt: fast cursor near the character
     if (
@@ -363,8 +371,15 @@ export class Brain {
       this.huntReq.pending = true;
       this.huntReq.until = t + 1;
       this.huntReq.dir = dx >= 0 ? 1 : -1;
+      interesting = true;
     }
-    this.wakeFn();
+    const curious = this.cursorCurious();
+    if (curious !== this.wasCurious) {
+      this.wasCurious = curious;
+      interesting = true;
+    }
+    // cursor samples that change nothing visible must not cost a redraw
+    if (interesting) this.wakeFn();
   }
 
   private pushLook(): void {
@@ -382,6 +397,7 @@ export class Brain {
 
   handleInput(s: InputSample): void {
     const t = this.t();
+    const prevIdle = this.idleMs;
     this.lastInput = s;
     this.lastInputAt = t;
     if (s.keyBurst) this.lastKeyAt = t;
@@ -390,7 +406,9 @@ export class Brain {
       this.lastScrollAt = t;
       this.paper = clamp(this.paper + Math.abs(s.scrollDelta) * 0.03, 0, 1);
     }
-    this.wakeFn();
+    // heartbeat samples with nothing going on must not cost a redraw; waking from bored/sleep must
+    const woke = prevIdle >= BORED_AFTER_MS - 1000 && s.idleMs < prevIdle - 1000;
+    if (s.keyBurst || s.keysPerSec > 0 || s.scrollDelta !== 0 || s.mouseSpeed > FAST_MOUSE_PX_S || woke) this.wakeFn();
   }
 
   surprise(sec: number): void {
@@ -652,6 +670,8 @@ export class Brain {
         if (this.glanceFor <= 0) {
           this.lookTx = this.lookTy = 0;
           this.pushLook();
+          this.lookX.snap(0);
+          this.lookY.snap(0);
         }
       } else if (this.glanceIn <= 0) {
         this.glanceIn = (5 + this.rng() * 7) * i.glance;
@@ -659,6 +679,8 @@ export class Brain {
         this.lookTx = (this.rng() < 0.5 ? -1 : 1) * (0.5 + this.rng() * 0.5);
         this.lookTy = (this.rng() - 0.5) * 0.6;
         this.pushLook();
+        this.lookX.snap(this.lookTx); // saccade: one redraw, not a spring glide
+        this.lookY.snap(this.lookTy);
       }
     }
 
@@ -781,8 +803,8 @@ export class Brain {
       !this.lean.settled ||
       !this.growSpring.settled ||
       !this.peekSpring.settled ||
-      !this.lookX.settled ||
-      !this.lookY.settled ||
+      q(this.lookX.value, 0.25) !== q(this.lookX.target, 0.25) ||
+      q(this.lookY.value, 0.25) !== q(this.lookY.target, 0.25) ||
       this.heat > 0.3 ||
       this.state.animates(this)
     );
@@ -799,19 +821,16 @@ export class Brain {
     } else if (this.glanceFor > 0) d = Math.min(d, this.glanceFor);
     else if (t - this.cursorAt > 3 || !this.settings.reactions.eyeFollow) d = Math.min(d, this.glanceIn);
     else d = Math.min(d, 3 - (t - this.cursorAt) + 0.05); // cursor goes stale -> glances start
-    for (const e of [
-      this.forced?.until,
-      this.reminder.kind ? this.reminder.until : undefined,
-      this.surprisedUntil,
-      this.nudgeUntil,
-      this.dizzyUntil,
-      this.doneUntil,
-      this.alertUntil,
-      this.purrUntil,
-      this.huntActiveUntil,
-    ]) {
-      if (e !== undefined && e > t) d = Math.min(d, e - t);
-    }
+    // deadlines (no per-tick allocation: plain comparisons)
+    d = soonest(d, t, this.forced ? this.forced.until : 0);
+    d = soonest(d, t, this.reminder.kind ? this.reminder.until : 0);
+    d = soonest(d, t, this.surprisedUntil);
+    d = soonest(d, t, this.nudgeUntil);
+    d = soonest(d, t, this.dizzyUntil);
+    d = soonest(d, t, this.doneUntil);
+    d = soonest(d, t, this.alertUntil);
+    d = soonest(d, t, this.purrUntil);
+    d = soonest(d, t, this.huntActiveUntil);
     // pending requests that a busy higher state is holding back
     if (this.doneReq.pending || this.alertReq.pending || this.huntReq.pending) d = Math.min(d, 0.25);
     d = Math.min(d, this.state.nextEvent(this));

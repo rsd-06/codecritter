@@ -17,6 +17,6 @@ describe('breath', () => {
     expect(breathFrame('sit', 1)).toBe(1);
     expect(breathFrame('alert', 5)).toBe(0);
     expect(timeToBreathChange('alert', 0)).toBe(Infinity);
-    expect(timeToBreathChange('sit', 0.1)).toBeCloseTo(0.7, 5);
+    expect(timeToBreathChange('sit', 0.1)).toBeCloseTo(0.9, 5);
   });
 });

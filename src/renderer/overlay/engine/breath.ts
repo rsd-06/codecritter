@@ -8,7 +8,7 @@ interface BreathSpec {
 }
 
 const SPECS: Partial<Record<PoseName, BreathSpec>> = {
-  sit: { period: 3.2, frames: [0, 1, 1, 0] },
+  sit: { period: 4, frames: [0, 1, 1, 0] },
   sleep: { period: 4.8, frames: [0, 1, 2, 2, 1, 0] },
   stretch: { period: 3.2, frames: [0, 1, 1, 0] },
   crouch: { period: 2.4, frames: [0, 1, 1, 0] },

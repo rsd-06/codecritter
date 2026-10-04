@@ -43,9 +43,9 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 
 ## P2 Features
 ### D. Behaviour [agent-D] — owns `src/renderer/overlay/behavior/**`
-- [ ] State machine w/ priorities + tests
-- [ ] All reactions: eye follow, drag/mochi, hunt, purr, knead, overheat, stretch, water, paper, thinking, done-jump, alert, sleep, peek, message
-- [ ] Name personalisation in all strings (Yoda-speak variants for Yoda)
+- [x] State machine w/ priorities + tests
+- [x] All reactions: eye follow, drag/mochi, hunt, purr, knead, overheat, stretch, water, paper, thinking, done-jump, alert, sleep, peek, message
+- [x] Name personalisation in all strings (Yoda-speak variants for Yoda)
 
 ### E. Scheduler & system [agent-E] — owns `src/main/scheduler/**`, `src/main/peek/**`, `src/main/sync.ts`
 - [x] Stretch/water interval reminders, custom messages (once/daily/weekdays), DND window — tests w/ fake timers
