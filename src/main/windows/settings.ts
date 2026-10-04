@@ -3,11 +3,18 @@ import { join } from 'node:path';
 import { loadPage } from './overlay';
 
 let win: BrowserWindow | null = null;
-let quitting = false;
 
-/** Lazily creates the (hidden until requested) settings window. */
-export function getSettingsWindow(): BrowserWindow {
-  if (win && !win.isDestroyed()) return win;
+/**
+ * Settings window is created lazily on demand and DESTROYED on close so its renderer
+ * process (and memory) is released while the companion idles in the tray.
+ */
+export function openSettings(): void {
+  if (win && !win.isDestroyed()) {
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
+    return;
+  }
   win = new BrowserWindow({
     width: 900,
     height: 640,
@@ -18,26 +25,25 @@ export function getSettingsWindow(): BrowserWindow {
       preload: join(__dirname, '../preload/settings.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false, // preload bundles share a chunk (see MEMORY.md)
+      sandbox: true,
+      spellcheck: false,
     },
   });
-  // Close hides rather than destroys, so reopening is instant.
-  win.on('close', (e) => {
-    if (!quitting) {
-      e.preventDefault();
-      win?.hide();
-    }
+  win.once('ready-to-show', () => {
+    win?.show();
+    win?.focus();
+  });
+  win.on('closed', () => {
+    win = null;
   });
   loadPage(win, 'settings');
-  return win;
 }
 
-export function openSettings(): void {
-  const w = getSettingsWindow();
-  w.show();
-  w.focus();
+export function isSettingsOpen(): boolean {
+  return !!win && !win.isDestroyed();
 }
 
+/** Kept for API compatibility; nothing to do now that close destroys the window. */
 export function markQuitting(): void {
-  quitting = true;
+  /* no-op */
 }

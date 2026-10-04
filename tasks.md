@@ -25,13 +25,13 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [ ] Mock bridge + playground page with buttons/sliders for every event
 
 ### B. Main process shell [agent-B] — owns `src/main/{index,store,tray,shortcuts,autostart}.ts`, `src/main/windows/**`, `src/main/input/**`, `src/preload/**`
-- [ ] Single-instance, app lifecycle, no dock icon on mac (tray app)
-- [ ] Overlay window (transparent, click-through, hit-test toggling, drag, persisted position, multi-monitor clamp)
-- [ ] uiohook input monitor → InputSample @10Hz (counts only) + fallback
-- [ ] Cursor poller → CursorSample @30Hz (throttled to 5Hz when idle)
-- [ ] electron-store w/ defaults + migration + broadcast on change
-- [ ] Tray menu (character switch, pomodoro, peek, pause reactions, settings, quit), global shortcuts, autostart
-- [ ] Preload bridges per contract
+- [x] Single-instance, app lifecycle, no dock icon on mac (tray app)
+- [x] Overlay window (transparent, click-through, hit-test toggling, drag, persisted position, multi-monitor clamp)
+- [x] uiohook input monitor → InputSample @10Hz (counts only) + fallback
+- [x] Cursor poller → CursorSample @30Hz (throttled to 5Hz when idle)
+- [x] electron-store w/ defaults + migration + broadcast on change
+- [x] Tray menu (character switch, pomodoro, peek, pause reactions, settings, quit), global shortcuts, autostart
+- [x] Preload bridges per contract
 
 ### C. Agent integration [agent-C] — owns `src/main/agents/**`, `bin/**`, `docs/agents.md`
 - [x] Loopback HTTP server w/ token, rate limit, validation, tests
