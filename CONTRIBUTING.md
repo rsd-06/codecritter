@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-If your system drive is tight on space, point the caches elsewhere (this repo's `.npmrc` already does for the maintainer's machine; override it with env vars): `npm_config_cache`, `ELECTRON_CACHE`, `ELECTRON_BUILDER_CACHE`. Never install anything globally.
+If your system drive is tight on space, point the caches elsewhere (set these env vars or your user-level `~/.npmrc`; the repo ships no `.npmrc`): `npm_config_cache`, `ELECTRON_CACHE`, `ELECTRON_BUILDER_CACHE`. Never install anything globally.
 
 ## Scripts
 

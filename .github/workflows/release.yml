@@ -19,10 +19,6 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     env:
-      # the committed .npmrc points the caches at a local dev drive; override for CI runners
-      npm_config_cache: ${{ runner.temp }}/npm-cache
-      ELECTRON_CACHE: ${{ runner.temp }}/electron-cache
-      ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/electron-builder-cache
       # no certificates: skip auto-discovery so macOS does not try (and fail) to find an identity
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
