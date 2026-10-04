@@ -206,12 +206,14 @@ if (!app.requestSingleInstanceLock()) {
         const m = app.getAppMetrics();
         const mem = m.reduce((a, p) => a + p.memory.workingSetSize, 0) / 1024;
         const cpu = m.reduce((a, p) => a + p.cpu.percentCPUUsage, 0);
+        const mu = process.memoryUsage();
+        console.log(`[metrics] main heapUsed=${(mu.heapUsed / 1048576).toFixed(0)}MB rss=${(mu.rss / 1048576).toFixed(0)}MB external=${(mu.external / 1048576).toFixed(0)}MB`);
         console.log(
           `[metrics] total workingSet=${mem.toFixed(0)}MB cpu=${cpu.toFixed(2)}% ` +
             m
               .map(
                 (p) =>
-                  `${p.type}:${(p.memory.workingSetSize / 1024).toFixed(0)}MB/${p.cpu.percentCPUUsage.toFixed(1)}%`,
+                  `${p.type}:${(p.memory.workingSetSize / 1024).toFixed(0)}MB(priv ${((p.memory.privateBytes ?? 0) / 1024).toFixed(0)})/${p.cpu.percentCPUUsage.toFixed(1)}%`,
               )
               .join(' '),
         );

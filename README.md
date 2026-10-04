@@ -142,7 +142,7 @@ Efficiency is a design goal: no animation loop while idle (a dirty-flag schedule
 | Metric | Result |
 | --- | --- |
 | CPU (idle) | ~0.0% |
-| Working set | ~190 MB (browser ~115 MB + overlay renderer ~77 MB; includes shared Electron/Chromium DLL pages) |
+| Working set | ~190-220 MB (browser ~115-131 MB + overlay renderer ~77-89 MB). This counts shared Electron/Chromium DLL pages; a bare Electron app with one transparent window measures 206 MB the same way, so CodeCritter adds only ~12 MB. Private (unshared) memory is ~110 MB. |
 | Idle redraws | ~1.2-1.4 per second (0.8 while asleep) |
 
 Honest note: the memory figure is above our 150 MB aspiration, which is close to the floor for an Electron app. `CRITTER_METRICS=1` prints these numbers, `CRITTER_GPU=1` re-enables GPU acceleration.

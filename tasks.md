@@ -62,8 +62,10 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] README (features, GIFs, install, agents, privacy), CONTRIBUTING, character-authoring guide
 
 ## P4 Polish
-- [ ] Idle CPU < 1%, memory < 150MB
+- [x] Idle CPU < 1% (0.0%)
+- [ ] Memory < 150MB working set: not achievable on Electron (bare Electron = 206 MB); ours 190-220 MB, private ~110 MB; experiments in MEMORY.md
 - [ ] Bug bash from Opus browser review
+- [x] CI green on ubuntu/windows/macos; platform-independent peek tests; release workflow fixed (tags + dispatch only); .npmrc removed from repo
 
 ## P2.5 integration fixes
 - [x] Auto-peek false positive: Windows uses SHQueryUserNotificationState (koffi); mac/linux heuristic tightened; unit tests with injected query
