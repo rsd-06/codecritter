@@ -57,9 +57,9 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] React app: Character (pick + palette editor + presets + live preview), Reactions, Reminders, Pomodoro, Messages, Pinned note, Agents (install/uninstall/test), General (name, scale, opacity, sound, autostart, DND, peek, sync), About
 
 ## P3 Ship
-- [ ] Icons via `tools/make_icons.py` (venv) from sprite export
-- [ ] electron-builder (win nsis+portable, mac dmg, linux AppImage+deb), release workflow on tags
-- [ ] README (features, GIFs, install, agents, privacy), CONTRIBUTING, character-authoring guide
+- [x] Icons via `tools/make_icons.py` (venv) from sprite export
+- [x] electron-builder (win nsis+portable, mac dmg, linux AppImage+deb), release workflow on tags
+- [x] README (features, GIFs, install, agents, privacy), CONTRIBUTING, character-authoring guide
 
 ## P4 Polish
 - [ ] Idle CPU < 1%, memory < 150MB
@@ -68,7 +68,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 ## P2.5 integration fixes
 - [x] Auto-peek false positive: Windows uses SHQueryUserNotificationState (koffi); mac/linux heuristic tightened; unit tests with injected query
 - [x] Peek edges: renderer honours settings.peek.edge (rotated head for left/right), shared PEEK_VISIBLE_FRACTION, default edge bottom, playground edge selector
-- [x] Settings Pomodoro tab: pomodoroState()/onPomodoro contract + IPC + PLAN.md �4 update
+- [x] Settings Pomodoro tab: pomodoroState()/onPomodoro contract + IPC + PLAN.md �4 update
 - [x] External links via shell.openExternal, navigation locked to app URLs
 - [x] Playground cold-cache Invalid hook call (optimizeDeps + dedupe)
 - [x] Bubble text capped to 2 lines, clamped inside stage when scaled

@@ -1,0 +1,52 @@
+name: Release
+
+# Push a tag like v0.1.0 to build installers on all three OSes and attach them to a DRAFT GitHub Release.
+# Builds are UNSIGNED (no code-signing certificates are configured): Windows SmartScreen and macOS Gatekeeper
+# will warn on first launch. See README "Install" for the workarounds.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      # the committed .npmrc points the caches at a local dev drive; override for CI runners
+      npm_config_cache: ${{ runner.temp }}/npm-cache
+      ELECTRON_CACHE: ${{ runner.temp }}/electron-cache
+      ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/electron-builder-cache
+      # no certificates: skip auto-discovery so macOS does not try (and fail) to find an identity
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Package and publish to a draft release
+        run: npx electron-builder --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Keep installers as workflow artifacts too
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          if-no-files-found: warn
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
+            release/*.deb
+            release/latest*.yml
