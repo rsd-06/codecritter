@@ -8,6 +8,8 @@ const idle = (): PomodoroState => ({ phase: 'idle', endsAt: null, cycle: 0, paus
 export function createMockBridge(): SettingsBridge {
   let settings: Settings = structuredClone(DEFAULT_SETTINGS);
   let pomo = idle();
+  const subs = new Set<(s: PomodoroState) => void>();
+  const push = (): void => subs.forEach((f) => f({ ...pomo }));
   const installed: Record<string, boolean> = { 'claude-code': true };
   const fileOf = (id: string): string => AGENTS.find((a) => a.id === id)?.file ?? '';
   const phaseMs = (p: PomodoroState['phase']): number =>
@@ -42,7 +44,13 @@ export function createMockBridge(): SettingsBridge {
       } else if (cmd === 'skip' && pomo.phase !== 'idle') {
         pomo = pomo.phase === 'focus' ? begin('break', pomo.cycle) : begin('focus', pomo.cycle + 1);
       }
+      push();
       return Promise.resolve({ ...pomo });
+    },
+    pomodoroState: () => Promise.resolve({ ...pomo }),
+    onPomodoro: (cb) => {
+      subs.add(cb);
+      return () => subs.delete(cb);
     },
     agentStatus: () =>
       Promise.resolve(

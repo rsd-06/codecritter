@@ -16,6 +16,7 @@ export const IPC = {
   openSettings: 'critter:open-settings',
   contextMenu: 'critter:context-menu',
   pomodoroCmd: 'critter:pomodoro-cmd',
+  pomodoroState: 'critter:pomodoro-state',
   agentStatus: 'critter:agent-status',
   installAgent: 'critter:install-agent',
   uninstallAgent: 'critter:uninstall-agent',

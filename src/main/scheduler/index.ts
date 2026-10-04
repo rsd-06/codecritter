@@ -3,6 +3,7 @@ import { IPC } from '../../shared/ipc';
 import { registerPomodoro } from '../hooks';
 import { getSettings, onSettingsChanged, updateSettings } from '../store';
 import { broadcast } from '../windows/overlay';
+import { sendToSettings } from '../windows/settings';
 import { PomodoroEngine } from './pomodoro';
 import { startReminders, type ReminderRunner } from './reminders';
 
@@ -34,7 +35,10 @@ export function startScheduler(): void {
   pomo = new PomodoroEngine({
     now: () => Date.now(),
     getConfig: () => getSettings().pomodoro,
-    emitState: (s) => broadcast(IPC.pomodoro, s),
+    emitState: (s) => {
+      broadcast(IPC.pomodoro, s);
+      sendToSettings(IPC.pomodoroState, s);
+    },
     emitReminder: (e) => broadcast(IPC.reminder, e),
   });
   registerPomodoro({

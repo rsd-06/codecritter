@@ -109,7 +109,24 @@ export const PomodoroTab = memo(function PomodoroTab() {
   const visible = useVisible();
   const p = settings.pomodoro;
 
-  // The bridge exposes commands only; each returns the new state. Tick a local clock 1 s while visible.
+  // Load the real state on mount (tray-started sessions) and follow main's pushes.
+  useEffect(() => {
+    let alive = true;
+    bridge.pomodoroState().then(
+      (s) => alive && setState(s),
+      () => undefined,
+    );
+    const off = bridge.onPomodoro((s) => {
+      setState(s);
+      setNow(Date.now());
+    });
+    return () => {
+      alive = false;
+      off();
+    };
+  }, [bridge]);
+
+  // Display-only countdown: re-render once a second from state.endsAt while visible.
   useEffect(() => {
     if (!visible || state.phase === 'idle' || state.paused) return;
     const h = setInterval(() => setNow(Date.now()), 1000);

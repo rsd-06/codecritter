@@ -39,6 +39,13 @@ export function openSettings(): void {
   loadPage(win, 'settings');
 }
 
+/** Push a message to the settings window (no-op when it is closed). */
+export function sendToSettings(channel: string, payload: unknown): void {
+  if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) {
+    win.webContents.send(channel, payload);
+  }
+}
+
 export function isSettingsOpen(): boolean {
   return !!win && !win.isDestroyed();
 }

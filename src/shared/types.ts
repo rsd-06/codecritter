@@ -131,6 +131,10 @@ export interface SettingsBridge {
   get(): Promise<Settings>;
   set(patch: Partial<Settings>): Promise<Settings>;
   pomodoro(cmd: 'start' | 'pause' | 'resume' | 'skip' | 'stop'): Promise<PomodoroState>;
+  /** Current pomodoro state (for tray-started sessions). */
+  pomodoroState(): Promise<PomodoroState>;
+  /** Subscribe to pomodoro state pushes; returns an unsubscribe function. */
+  onPomodoro(cb: (s: PomodoroState) => void): () => void;
   agentStatus(): Promise<Record<string, { installed: boolean; path: string }>>;
   installAgent(id: AgentId): Promise<{ ok: boolean; message: string }>;
   uninstallAgent(id: AgentId): Promise<{ ok: boolean; message: string }>;

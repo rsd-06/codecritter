@@ -157,6 +157,8 @@ export interface OverlayBridge {
 export interface SettingsBridge {
   get(): Promise<Settings>; set(patch: Partial<Settings>): Promise<Settings>;
   pomodoro(cmd: 'start'|'pause'|'resume'|'skip'|'stop'): Promise<PomodoroState>;
+  pomodoroState(): Promise<PomodoroState>;                 // current state (tray-started sessions)
+  onPomodoro(cb: (s: PomodoroState) => void): () => void;  // pushed on every transition (+1/s while running)
   agentStatus(): Promise<Record<string, { installed: boolean; path: string }>>;
   installAgent(id: AgentId): Promise<{ ok: boolean; message: string }>;
   uninstallAgent(id: AgentId): Promise<{ ok: boolean; message: string }>;
@@ -172,7 +174,7 @@ export const IPC = {
   getSettings: 'critter:get-settings', setSettings: 'critter:set-settings', setInteractive: 'critter:set-interactive',
   dragStart: 'critter:drag-start', dragMove: 'critter:drag-move', dragEnd: 'critter:drag-end',
   openSettings: 'critter:open-settings', contextMenu: 'critter:context-menu',
-  pomodoroCmd: 'critter:pomodoro-cmd', agentStatus: 'critter:agent-status', installAgent: 'critter:install-agent',
+  pomodoroCmd: 'critter:pomodoro-cmd', pomodoroState: 'critter:pomodoro-state', agentStatus: 'critter:agent-status', installAgent: 'critter:install-agent',
   uninstallAgent: 'critter:uninstall-agent', testEvent: 'critter:test-event', testReminder: 'critter:test-reminder',
   exportSettings: 'critter:export-settings', importSettings: 'critter:import-settings',
 } as const;

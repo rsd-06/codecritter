@@ -10,7 +10,7 @@ import type {
   Settings,
 } from '../shared/types';
 import { initAutostart } from './autostart';
-import { getAgentApi, pomodoroCommand, registerAgentApi } from './hooks';
+import { getAgentApi, getPomodoroState, pomodoroCommand, registerAgentApi } from './hooks';
 import { prepareHookCmd } from './hookCmd';
 import { startPeek, stopPeek } from './peek';
 import { startScheduler, stopScheduler } from './scheduler';
@@ -134,6 +134,7 @@ function registerIpc(): void {
   ipcMain.handle(IPC.getSettings, () => getSettings());
   ipcMain.handle(IPC.setSettings, (_e, patch: Partial<Settings>) => updateSettings(patch ?? {}));
   ipcMain.handle(IPC.pomodoroCmd, (_e, cmd) => pomodoroCommand(cmd));
+  ipcMain.handle(IPC.pomodoroState, () => getPomodoroState());
   ipcMain.handle(IPC.agentStatus, () => getAgentApi().status());
   ipcMain.handle(IPC.installAgent, (_e, id) => getAgentApi().install(id));
   ipcMain.handle(IPC.uninstallAgent, (_e, id) => getAgentApi().uninstall(id));
