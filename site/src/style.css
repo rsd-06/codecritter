@@ -798,3 +798,89 @@ main {
     font-size: 0.82rem;
   }
 }
+
+/* ---------- feature clips ---------- */
+.clip-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(20px, 3vw, 36px);
+}
+.clip figure {
+  margin: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--glow);
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s;
+}
+.clip figure:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 var(--glow);
+}
+.clip-media {
+  position: relative;
+  line-height: 0;
+  border-bottom: 2px solid var(--ink);
+  background: #0c1230;
+}
+.clip-media video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  image-rendering: pixelated;
+  cursor: default;
+}
+.clip-num {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  padding: 8px 10px 7px;
+  font: 700 1rem/1 var(--font-display);
+  color: var(--on-accent);
+  background: var(--accent);
+  border-right: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+.clip figcaption {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 16px 18px 20px;
+}
+.clip figcaption h3 {
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+.clip figcaption p {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+@media (max-width: 960px) {
+  .clip-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .clip-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clip figure,
+  .clip figure:hover {
+    transform: none;
+  }
+  .clip-media video {
+    cursor: pointer;
+  }
+}

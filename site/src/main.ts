@@ -259,3 +259,33 @@ void (async () => {
   }
 })();
 
+
+/* ------------------------------------------------------------------ feature clips: play only while visible */
+const clipVideos = [...document.querySelectorAll<HTMLVideoElement>('.clip video')];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const playClip = (v: HTMLVideoElement): void => void v.play().catch(() => undefined);
+if (reduceMotion.matches) {
+  // posters only; a hover, focus or tap plays that one clip
+  clipVideos.forEach((v) => {
+    v.removeAttribute('autoplay');
+    v.pause();
+    v.tabIndex = 0;
+    v.addEventListener('pointerenter', () => playClip(v));
+    v.addEventListener('pointerleave', () => v.pause());
+    v.addEventListener('focus', () => playClip(v));
+    v.addEventListener('blur', () => v.pause());
+    v.addEventListener('click', () => (v.paused ? playClip(v) : v.pause()));
+  });
+} else {
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        const v = e.target as HTMLVideoElement;
+        if (e.isIntersecting) playClip(v);
+        else v.pause();
+      }
+    },
+    { threshold: 0.25 },
+  );
+  clipVideos.forEach((v) => io.observe(v));
+}
