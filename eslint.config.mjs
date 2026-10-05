@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['out/**', 'dist/**', 'release/**', 'node_modules/**', '.venv/**', 'coverage/**', 'tools/out/**', 'dist-tauri/**', 'src-tauri/**', 'site/dist/**', 'site/node_modules/**'] },
+  { ignores: ['out/**', 'dist/**', 'release/**', 'node_modules/**', '.venv/**', 'coverage/**', 'tools/out/**', 'dist-tauri/**', 'src-tauri/**', 'site/dist/**', 'brag-output/**', 'site/node_modules/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

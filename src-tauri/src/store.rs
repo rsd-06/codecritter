@@ -60,6 +60,11 @@ pub fn validate(s: &mut Value) {
     o.insert("opacity".into(), jnum(op));
     let kps = clamp(num(o.get("overheatKps"), 8.0), 1.0, 30.0);
     o.insert("overheatKps".into(), jnum(kps));
+    if let Some(Value::Object(up)) = o.get_mut("updates") {
+        if !up.get("auto").map(Value::is_boolean).unwrap_or(false) {
+            up.insert("auto".into(), json!(true));
+        }
+    }
     if let Some(Value::Object(snd)) = o.get_mut("sound") {
         let vol = clamp(num(snd.get("volume"), 0.5), 0.0, 1.0);
         snd.insert("volume".into(), jnum(vol));
@@ -203,6 +208,13 @@ mod tests {
         s["scale"] = json!("junk");
         validate(&mut s);
         assert_eq!(s["scale"], 2);
+    }
+
+    #[test]
+    fn updates_auto_defaults_on_and_junk_is_repaired() {
+        assert_eq!(load_from(json!({}))["updates"]["auto"], true);
+        assert_eq!(load_from(json!({"updates":{"auto":false}}))["updates"]["auto"], false);
+        assert_eq!(load_from(json!({"updates":{"auto":"yes"}}))["updates"]["auto"], true);
     }
 
     #[test]

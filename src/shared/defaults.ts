@@ -55,5 +55,6 @@ export const DEFAULT_SETTINGS: Settings = {
   peek: { auto: true, edge: 'bottom' },
   agents: { enabled: true, port: AGENT_PORT, token: '' },
   autostart: false,
+  updates: { auto: true },
   syncFolder: null,
 };

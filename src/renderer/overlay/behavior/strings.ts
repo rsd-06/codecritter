@@ -14,7 +14,8 @@ export type StringKey =
   | 'error'
   | 'thinking'
   | 'thinkingMany'
-  | 'bedtime';
+  | 'bedtime'
+  | 'updated';
 
 export const STRINGS: Record<CharacterId, Record<StringKey, readonly string[]>> = {
   stitch: {
@@ -56,6 +57,11 @@ export const STRINGS: Record<CharacterId, Record<StringKey, readonly string[]>> 
       'Sleepy... go to bed, {name}!',
       'Ohana needs sleep, {name}. Bed time!',
     ],
+    updated: [
+      'New me! Updated to v{version}, {name}!',
+      'Ooh, shiny! v{version} now, {name}! Hehe!',
+      'Ohana got an upgrade! v{version}!',
+    ],
   },
   yoda: {
     stretch: [
@@ -96,6 +102,11 @@ export const STRINGS: Record<CharacterId, Record<StringKey, readonly string[]>> 
       'To bed go, {name}. Rest, you need.',
       'Tired you look, {name}. Hmm. Sleep!',
     ],
+    updated: [
+      'Updated to v{version}, I have, {name}. Hmm.',
+      'Stronger now, I am. Version {version} it is.',
+      'Changed I have, {name}. v{version}, hmm.',
+    ],
   },
 };
 
@@ -133,6 +144,7 @@ export interface Vars {
   name?: string;
   agent?: string;
   agents?: string;
+  version?: string;
 }
 
 export function format(template: string, v: Vars = {}): string {
@@ -140,6 +152,7 @@ export function format(template: string, v: Vars = {}): string {
   let s = name ? template.replace(/\{name\}/g, name) : stripName(template);
   if (v.agent !== undefined) s = s.replace(/\{agent\}/g, v.agent);
   if (v.agents !== undefined) s = s.replace(/\{agents\}/g, v.agents);
+  if (v.version !== undefined) s = s.replace(/\{version\}/g, v.version);
   return s;
 }
 

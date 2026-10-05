@@ -3,6 +3,9 @@ name: Release
 # Push a tag like v0.2.0 (or run manually) to build installers on all three OSes and attach them to a
 # DRAFT GitHub Release (review it, then publish). Builds are UNSIGNED: no code-signing certificates are
 # configured, so Windows SmartScreen and macOS Gatekeeper will warn on first launch (see README "Install").
+# Update artifacts (.sig + latest.json) ARE signed with the maintainer's minisign key: repository secrets
+# TAURI_SIGNING_PRIVATE_KEY (+ TAURI_SIGNING_PRIVATE_KEY_PASSWORD) must exist. Clients only see latest.json once the
+# draft release is PUBLISHED (the updater endpoint is releases/latest/download/latest.json).
 on:
   push:
     tags: ['v*']
@@ -47,10 +50,13 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v__VERSION__-{0}', github.run_number) }}
           releaseName: 'CodeCritter v__VERSION__'
           releaseBody: 'Unsigned build: Windows SmartScreen / macOS Gatekeeper will warn on first launch. See the README for install notes.'
           releaseDraft: true
           prerelease: false
+          includeUpdaterJson: true
           args: ${{ matrix.args }}

@@ -7,6 +7,7 @@ mod commands;
 mod state;
 mod store;
 mod tray;
+mod updater;
 mod winmgr;
 mod shortcuts;
 #[cfg(debug_assertions)]
@@ -38,6 +39,8 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(state::AppState::default())
         .on_window_event(|window, event| {
             if window.label() == winmgr::OVERLAY {
@@ -66,6 +69,9 @@ pub fn run() {
             commands::import_settings,
             commands::open_external,
             commands::rebroadcast_settings,
+            commands::check_update,
+            commands::install_update,
+            commands::update_status,
         ])
         .setup(|app| {
             let handle = app.handle().clone();
@@ -86,6 +92,7 @@ pub fn run() {
             peek::start(handle.clone());
             agents::start(handle.clone());
             scheduler::start(handle.clone());
+            updater::start(handle.clone());
             sync::start(handle);
             Ok(())
         })

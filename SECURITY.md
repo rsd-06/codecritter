@@ -8,7 +8,7 @@ Only the latest release is supported.
 
 ## Threat model
 
-CodeCritter is a local desktop app. It has no accounts, no servers and no telemetry, and makes no outbound network requests.
+CodeCritter is a local desktop app. It has no accounts, no servers and no telemetry. The only outbound network request is the optional update check (see below).
 
 **What it touches**
 
@@ -28,6 +28,10 @@ CodeCritter is a local desktop app. It has no accounts, no servers and no teleme
 
 **Out of scope**: an attacker who can already read your home directory or run code as you (they can read the token, and much worse); the fact that unsigned builds trigger SmartScreen/Gatekeeper warnings; denial of service by a local process spamming a loopback port.
 
+## Updates
+
+The app checks `https://github.com/rsd-06/codecritter/releases/latest/download/latest.json` about 30 seconds after start and then every 6 hours (Settings > General > Automatic updates turns the check off completely; the request carries no identifiers). Update packages are **signature-verified**: the updater (`tauri-plugin-updater`) refuses any package whose minisign signature does not match the public key embedded in the app (`plugins.updater.pubkey` in `tauri.conf.json`). The matching private key is held by the maintainer and stored only as a GitHub Actions secret (`TAURI_SIGNING_PRIVATE_KEY`); it is never committed. A compromised GitHub account alone therefore cannot push a malicious update to existing installs without also holding that key. Installation is silent-passive on Windows (no admin rights, per-user install) and only happens when you are idle or quit.
+
 ## Supply chain
 
-Release builds are produced by the public GitHub Actions workflow from tagged commits. They are currently **unsigned**. Verify downloads come from the official Releases page. Windows and macOS code signing is on the roadmap.
+Release builds are produced by the public GitHub Actions workflow from tagged commits. Installers are currently **not code-signed** (update packages are signed with the minisign key above). Verify downloads come from the official Releases page. Windows and macOS code signing is on the roadmap.

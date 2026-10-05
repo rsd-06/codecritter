@@ -1,7 +1,77 @@
-import { memo } from 'react';
-import type { Settings } from '@shared/types';
+import { memo, useCallback, useEffect, useState } from 'react';
+import type { Settings, UpdateStatus } from '@shared/types';
+import { VERSION } from './About';
 import { clamp } from './helpers';
 import { Section, Slider, TextField, TimeField, Toggle, useCtx } from './ui';
+
+/** One line describing the last update check. */
+export function updateStatusLine(s: UpdateStatus | null): string {
+  if (!s) return 'Not checked yet.';
+  if (s.downloaded && s.version) return `v${s.version} is downloaded and installs when you are away (or on quit).`;
+  if (s.available && s.version) return `v${s.version} is available.`;
+  if (s.error) return 'Could not check (offline?). Will retry automatically.';
+  if (s.lastCheckedAt) return `Up to date (checked ${new Date(s.lastCheckedAt).toLocaleTimeString()}).`;
+  return 'Not checked yet.';
+}
+
+const UpdatesGroup = memo(function UpdatesGroup() {
+  const { settings, save, bridge, toast } = useCtx();
+  const [status, setStatus] = useState<UpdateStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const refresh = useCallback(() => {
+    bridge.updateStatus().then(setStatus, () => undefined);
+  }, [bridge]);
+  useEffect(refresh, [refresh]);
+
+  const check = (): void => {
+    setBusy(true);
+    bridge.checkUpdate().then(
+      () => {
+        setBusy(false);
+        refresh();
+      },
+      () => {
+        setBusy(false);
+        toast('Update check failed', false);
+        refresh();
+      },
+    );
+  };
+  const install = (): void => {
+    setBusy(true);
+    bridge.installUpdate().then(
+      () => setBusy(false),
+      () => {
+        setBusy(false);
+        toast('Update failed', false);
+      },
+    );
+  };
+
+  return (
+    <div className="group">
+      <Toggle
+        label="Automatic updates"
+        hint="Download new versions in the background and install them when you are away. The only network request CodeCritter makes."
+        checked={settings.updates.auto}
+        onChange={(on) => save({ updates: { auto: on } })}
+      />
+      <p className="hint" data-testid="update-status">
+        Version {status?.currentVersion ?? VERSION}. {updateStatusLine(status)}
+      </p>
+      <div className="actions">
+        <button type="button" className="btn" disabled={busy} onClick={check}>
+          {busy ? 'Checking...' : 'Check for updates now'}
+        </button>
+        {status?.available && status.version && (
+          <button type="button" className="btn" disabled={busy} onClick={install}>
+            Install v{status.version} and restart
+          </button>
+        )}
+      </div>
+    </div>
+  );
+});
 
 export const GeneralTab = memo(function GeneralTab() {
   const { settings, save, bridge, toast } = useCtx();
@@ -103,6 +173,8 @@ export const GeneralTab = memo(function GeneralTab() {
           </select>
         </div>
       </div>
+
+      <UpdatesGroup />
 
       <div className="group">
         <TextField

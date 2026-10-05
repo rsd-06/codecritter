@@ -16,6 +16,8 @@ import type {
   ReminderKind,
   Settings,
   SettingsBridge,
+  UpdateInfo,
+  UpdateStatus,
 } from '@shared/types';
 
 export function isTauriRuntime(): boolean {
@@ -73,6 +75,9 @@ export class TauriBridge implements OverlayBridge, SettingsBridge {
   testReminder = (kind: ReminderKind): Promise<void> => invoke('test_reminder', { kind });
   exportSettings = (): Promise<string | null> => invoke('export_settings');
   importSettings = (): Promise<boolean> => invoke('import_settings');
+  checkUpdate = (): Promise<UpdateInfo> => invoke<UpdateInfo>('check_update');
+  installUpdate = (): Promise<void> => invoke('install_update');
+  updateStatus = (): Promise<UpdateStatus> => invoke<UpdateStatus>('update_status');
 }
 
 /** Route `window.open(https://...)` (settings About links) to the system browser. */

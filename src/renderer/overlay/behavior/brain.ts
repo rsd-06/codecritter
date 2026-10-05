@@ -503,6 +503,9 @@ export class Brain {
       case 'pomodoro-break':
         text = pick(this.character, 'pomodoroBreak', { name: this.name }, this.rng).text;
         break;
+      case 'updated':
+        text = pick(this.character, 'updated', { name: this.name, version: truncate(r.text, 16) }, this.rng).text;
+        break;
       default:
         text = pick(this.character, 'pomodoroDone', { name: this.name }, this.rng).text;
     }
@@ -512,7 +515,7 @@ export class Brain {
     if (!this.peeking) {
       this.reminder.kind = r.kind;
       this.reminder.until = t + Math.max(2.5, r.durationMs / 1000);
-      if (r.kind === 'message' || r.kind === 'pomodoro-done') this.hop(1);
+      if (r.kind === 'message' || r.kind === 'pomodoro-done' || r.kind === 'updated') this.hop(1);
     }
     this.wakeFn();
   }

@@ -149,6 +149,7 @@ class Reminder extends Base {
         i.expression = 'happy';
         break;
       case 'message':
+      case 'updated':
         i.paws = 'wave';
         i.expression = 'happy';
         break;

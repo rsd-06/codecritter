@@ -1,6 +1,6 @@
 [package]
 name = "codecritter"
-version = "0.2.0"
+version = "0.2.1"
 description = "Open-source pixel desktop companion (Stitch & Yoda) for developers"
 authors = ["rsd-06"]
 license = "MIT"
@@ -19,6 +19,7 @@ tauri-plugin-global-shortcut = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
+tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 rdev = "0.5"
@@ -35,6 +36,7 @@ windows = { version = "0.61", features = ["Win32_UI_Shell", "Win32_Foundation", 
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2"
 
 [features]
 default = []

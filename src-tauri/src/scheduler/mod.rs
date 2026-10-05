@@ -19,10 +19,25 @@ use tauri::{AppHandle, Emitter};
 
 /// Epoch ms of the last user input; 0 = never reported (idle unknown -> 0).
 static LAST_INPUT_MS: AtomicU64 = AtomicU64::new(0);
+static START_MS: AtomicU64 = AtomicU64::new(0);
 
 /// Record user activity "now" (cheap; safe to call from the input hook at any rate).
 pub fn note_input_activity() {
     LAST_INPUT_MS.store(SystemClock.now_ms().max(1) as u64, Ordering::Relaxed);
+}
+
+/// Idle time now (for the updater): since the last input, or since the scheduler started when none yet.
+pub fn idle_ms_now() -> u64 {
+    let now = SystemClock.now_ms();
+    match LAST_INPUT_MS.load(Ordering::Relaxed) {
+        0 => (now.max(0) as u64).saturating_sub(START_MS.load(Ordering::Relaxed)),
+        t => (now.max(0) as u64).saturating_sub(t),
+    }
+}
+
+/// A Pomodoro session (focus or break, paused or not) is in progress.
+pub fn pomodoro_running() -> bool {
+    sched().lock().pomo.state(SystemClock.now_ms()).phase != pomodoro::Phase::Idle
 }
 
 fn idle_ms(now: i64) -> u64 {
@@ -88,6 +103,7 @@ fn apply_rem(app: &AppHandle, effects: Vec<reminders::Effect>) {
 pub fn start(app: AppHandle) {
     {
         let now = SystemClock.now_ms();
+        START_MS.store(now.max(0) as u64, Ordering::Relaxed);
         let s = crate::store::get(&app);
         let mut g = sched().lock();
         g.rem.sync_intervals(now, &s);

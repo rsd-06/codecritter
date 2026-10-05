@@ -38,7 +38,7 @@ export interface CursorSample {
 } // screen coords + overlay bounds
 
 export type ReminderKind =
-  'stretch' | 'water' | 'message' | 'pomodoro-focus' | 'pomodoro-break' | 'pomodoro-done';
+  'stretch' | 'water' | 'message' | 'pomodoro-focus' | 'pomodoro-break' | 'pomodoro-done' | 'updated';
 export interface ReminderEvent {
   kind: ReminderKind;
   text: string;
@@ -99,6 +99,7 @@ export interface Settings {
   peek: { auto: boolean; edge: 'left' | 'right' | 'bottom' };
   agents: { enabled: boolean; port: number; token: string };
   autostart: boolean;
+  updates: { auto: boolean };
   syncFolder: string | null;
 }
 export interface PomodoroState {
@@ -126,6 +127,22 @@ export interface OverlayBridge {
   openSettings(): void;
   showContextMenu(): void;
 }
+export interface UpdateInfo {
+  available: boolean;
+  version?: string;
+  notes?: string;
+}
+export interface UpdateStatus {
+  currentVersion: string;
+  /** Epoch ms of the last completed check, null if none yet this session. */
+  lastCheckedAt: number | null;
+  available: boolean;
+  version?: string;
+  /** The update is downloaded and waits for a quiet moment (or quit) to install. */
+  downloaded: boolean;
+  /** Last check failed (offline, no release, ...). */
+  error?: string;
+}
 // Settings bridge (TauriBridge / mock)
 export interface SettingsBridge {
   get(): Promise<Settings>;
@@ -144,4 +161,8 @@ export interface SettingsBridge {
   testReminder(kind: ReminderKind): Promise<void>;
   exportSettings(): Promise<string | null>;
   importSettings(): Promise<boolean>;
+  checkUpdate(): Promise<UpdateInfo>;
+  /** Download (if needed), install and relaunch. */
+  installUpdate(): Promise<void>;
+  updateStatus(): Promise<UpdateStatus>;
 }

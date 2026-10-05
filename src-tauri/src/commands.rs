@@ -1,7 +1,7 @@
 //! Webview -> Rust commands. Names are the snake_case form of the IPC keys in src/shared/ipc.ts.
 //! JS invoke args are camelCase (`{ id }`, `{ kind }`, `{ patch }`, `{ on }`, `{ cmd }`, `{ dx, dy }`).
 
-use crate::{agents, scheduler, store, sync, winmgr};
+use crate::{agents, scheduler, store, sync, updater, winmgr};
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_opener::OpenerExt;
@@ -120,4 +120,21 @@ pub fn open_external(app: AppHandle, url: String) {
 #[tauri::command]
 pub fn rebroadcast_settings(app: AppHandle) {
     let _ = app.emit(store::EVT_SETTINGS, store::get(&app));
+}
+
+/// Manual update check (settings button). Errors are returned as an error string (offline etc.).
+#[tauri::command]
+pub async fn check_update(app: AppHandle) -> Result<Value, String> {
+    updater::check_now(&app).await
+}
+
+/// Download (if needed), install and relaunch.
+#[tauri::command]
+pub async fn install_update(app: AppHandle) -> Result<(), String> {
+    updater::install_now(&app).await
+}
+
+#[tauri::command]
+pub fn update_status() -> Value {
+    updater::status()
 }

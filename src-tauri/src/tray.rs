@@ -1,6 +1,6 @@
 //! System tray + the shared menu (tray and overlay right-click use the same builder).
 
-use crate::{peek, scheduler, state, store, winmgr};
+use crate::{peek, scheduler, state, store, updater, winmgr};
 use serde_json::json;
 use tauri::{
     image::Image,
@@ -66,12 +66,13 @@ pub fn build_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     let mute = CheckMenuItem::with_id(app, "mute", "Mute", true, muted, None::<&str>)?;
     let hide = MenuItem::with_id(app, "hide", "Hide / show companion", true, None::<&str>)?;
     let settings = MenuItem::with_id(app, "settings", "Settings\u{2026}", true, None::<&str>)?;
+    let update = MenuItem::with_id(app, "update", "Check for updates…", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit CodeCritter", true, None::<&str>)?;
     let sep = || PredefinedMenuItem::separator(app);
     let (s1, s2) = (sep()?, sep()?);
     Menu::with_items(
         app,
-        &[&header, &stitch, &yoda, &s1, &pomodoro, &peek_i, &pause, &mute, &hide, &s2, &settings, &quit],
+        &[&header, &stitch, &yoda, &s1, &pomodoro, &peek_i, &pause, &mute, &hide, &s2, &settings, &update, &quit],
     )
 }
 
@@ -95,7 +96,12 @@ pub fn handle_menu_id(app: &AppHandle, id: &str) {
         }
         "hide" => winmgr::toggle_companion_visible(app),
         "settings" => winmgr::open_settings(app),
-        "quit" => app.exit(0),
+        "update" => updater::tray_check(app),
+        "quit" => {
+            if !updater::install_on_quit(app) {
+                app.exit(0);
+            }
+        }
         _ => {}
     }
 }

@@ -75,5 +75,8 @@
     "token": ""
   },
   "autostart": false,
+  "updates": {
+    "auto": true
+  },
   "syncFolder": null
 }

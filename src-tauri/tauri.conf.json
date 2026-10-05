@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "CodeCritter",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "identifier": "dev.codecritter.app",
   "build": {
     "beforeDevCommand": "npm run gen:defaults && vite --config vite.tauri.config.ts",
@@ -59,6 +59,18 @@
       },
       "appimage": {
         "bundleMediaFramework": false
+      }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/rsd-06/codecritter/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMyMEZBNDNCODI3ODExOUIKUldTYkVYaUNPNlFQd21ja2o1bE1IUlZwdDJGbi9jMGxHaXNFZ0VyNmRMckVjd1NteWhGZG1XOFQK",
+      "windows": {
+        "installMode": "passive"
       }
     }
   }

@@ -138,9 +138,9 @@ describe('strings', () => {
     for (const c of chars) {
       for (const k of keys) {
         for (const tpl of STRINGS[c][k]) {
-          const named = format(tpl, { name: 'Sudharshan', agent: 'Claude', agents: 'Claude + Codex' });
+          const named = format(tpl, { name: 'Sudharshan', agent: 'Claude', agents: 'Claude + Codex', version: '0.2.1' });
           expect(named).not.toMatch(/[{}]/);
-          const blank = format(tpl, { name: '', agent: 'Claude', agents: 'Claude + Codex' });
+          const blank = format(tpl, { name: '', agent: 'Claude', agents: 'Claude + Codex', version: '0.2.1' });
           expect(blank).not.toMatch(/[{}]/);
           expect(blank).not.toMatch(/\s{2}|\s[,.!?]|^[\s,.!?]/);
           expect(blank[0]).toBe(blank[0]!.toUpperCase());

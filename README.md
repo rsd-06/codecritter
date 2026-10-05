@@ -50,7 +50,7 @@ Two characters ship in the box: **Stitch** and **Yoda** (unofficial fan art, see
 | 15 | Fixed message | A pinned sticky note above its head |
 | 16 | Your name | Bubbles use your name (Yoda keeps his syntax) |
 | 17 | Settings sync | Export/import settings, or point at a sync folder to share them across machines |
-| 18 | Peek mode | Hides at a screen edge and peeks out while a fullscreen app or video is up; only reminders break through |
+| 18 | Peek mode | Hides at a screen edge and peeks out while fullscreen apps, videos and games are up, including browser F11 fullscreen; only reminders break through |
 
 Extras: 18 expression presets per character, sleeps when you go idle, synthesised sounds (chirps for Stitch, hums for Yoda) with volume, scale 1-4x, opacity, do-not-disturb hours, multi-monitor aware, global shortcuts, autostart, quiet by design.
 
@@ -133,7 +133,8 @@ npx tauri icon build/icon.png                             # regenerate src-tauri
 
 Privacy is a feature, not a footnote.
 
-- **No telemetry, no analytics, no outbound network.** The app never phones home and has no auto-update ping.
+- **No telemetry, no analytics.** The only network request CodeCritter ever makes is the update check: a plain HTTPS GET of `latest.json` from this repository's GitHub Releases, with no identifiers and nothing about you or your usage. Turn it off in Settings > General > Automatic updates (then it never connects at all), or check by hand with "Check for updates now".
+- **Updates are signature-verified.** New versions are downloaded in the background and installed only after their minisign signature matches the public key built into the app, then installed when you are idle (2+ minutes, no Pomodoro running) or when you quit from the tray. The critter tells you afterwards.
 - **Keystrokes are never recorded.** The global input hook is aggregated in the Rust shell into counts and rates (keys per second, scroll delta, mouse speed). Key identities never leave the input hook and are never stored or logged.
 - **Loopback only.** The agent endpoint binds to `127.0.0.1`, requires a random per-install token, rejects browser requests, and is rate limited. Events can only animate the critter.
 - Agent messages (for speech bubbles) are shown and discarded; they are not stored.
@@ -157,7 +158,7 @@ Honest note: the WebView2 runtime is shared with Edge and other apps, so the sha
 
 ## Roadmap
 
-- Code-signed Windows and macOS builds and auto-update
+- Code-signed Windows and macOS builds
 - More built-in characters and a drop-in character pack loader
 - Per-monitor and per-app behaviour rules
 - Localised strings (the text layer is already i18n-ready)

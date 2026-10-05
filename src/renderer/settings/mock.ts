@@ -70,5 +70,9 @@ export function createMockBridge(): SettingsBridge {
     testReminder: () => Promise.resolve(),
     exportSettings: () => Promise.resolve('mock-settings.json'),
     importSettings: () => Promise.resolve(false),
+    checkUpdate: () => Promise.resolve({ available: false }),
+    installUpdate: () => Promise.resolve(),
+    updateStatus: () =>
+      Promise.resolve({ currentVersion: '0.2.1', lastCheckedAt: null, available: false, downloaded: false }),
   };
 }
