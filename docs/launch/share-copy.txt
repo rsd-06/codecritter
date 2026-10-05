@@ -1,0 +1,2 @@
+Made CodeCritter: a pixel co-worker that follows your cursor, overheats when you type too fast, and hops when Claude is done. No standup, no salary, 1.5 MB, MIT.
+github.com/rsd-06/codecritter
