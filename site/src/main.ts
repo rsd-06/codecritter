@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from '@shared/defaults';
 import type { AgentEvent, AgentId, CharacterId, ReminderKind, Settings } from '@shared/types';
 import { MockBridge } from '../../src/renderer/overlay/bridge';
 import { startOverlay } from '../../src/renderer/overlay/main';
+import { OS_NAMES, currentOs } from './os';
 
 const $ = <T extends HTMLElement>(sel: string): T => document.querySelector(sel) as T;
 
@@ -288,4 +289,12 @@ if (reduceMotion.matches) {
     { threshold: 0.25 },
   );
   clipVideos.forEach((v) => io.observe(v));
+}
+
+/* ------------------------------------------------------------------ download CTAs name the visitor's OS */
+const visitorOs = OS_NAMES[currentOs()];
+if (visitorOs) {
+  document.querySelectorAll<HTMLElement>('[data-dl-label="Download for"]').forEach((el) => {
+    el.textContent = `Download for ${visitorOs}`;
+  });
 }

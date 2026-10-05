@@ -9,5 +9,12 @@ export default defineConfig({
   resolve: { alias: { '@shared': resolve(__dirname, '../src/shared') } },
   server: { port: 5180, fs: { allow: [resolve(__dirname, '..')] } },
   preview: { port: 5181 },
-  build: { outDir: 'dist', emptyOutDir: true, target: 'es2022', sourcemap: false },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    target: 'es2022',
+    sourcemap: false,
+    // two pages: / and /download (vercel cleanUrls serves download.html at /download)
+    rollupOptions: { input: { main: resolve(__dirname, 'index.html'), download: resolve(__dirname, 'download.html') } },
+  },
 });
