@@ -1,6 +1,7 @@
 //! Emits `critter:cursor` (`CursorSample`: screen cursor + overlay bounds, all in PHYSICAL pixels) to
 //! the overlay. The overlay hit-tests click-through from these samples, so sampling continues while
-//! reactions are paused; it stops (slow re-check only) while the companion is hidden or peeking.
+//! reactions are paused; it stops (slow re-check only) while the companion is hidden. While peeking it keeps sampling
+//! (same 4 / 30 Hz rates) so the visible part of the head can still be hit-tested (right-click menu).
 //!
 //! Rate: 30 Hz while the cursor is within 400 logical px of the overlay or moving fast, else 4 Hz
 //! (also 4 Hz once the cursor has been still for 3 s). Unchanged samples are not emitted.
@@ -43,7 +44,7 @@ pub fn start(app: AppHandle) {
         let mut last_move = Instant::now();
         loop {
             let mut delay = STOPPED_MS;
-            if !state::is_hidden(&app) && !state::is_peeking(&app) {
+            if !state::is_hidden(&app) {
                 delay = SLOW_MS;
                 if let (Some(w), Ok(c)) = (winmgr::overlay(&app), app.cursor_position()) {
                     if let (Ok(p), Ok(s), Ok(sf)) = (w.outer_position(), w.outer_size(), w.scale_factor()) {
@@ -76,7 +77,7 @@ pub fn start(app: AppHandle) {
                 }
             } else {
                 last_pt = None;
-                last = None; // re-emit when the overlay is shown / unpeeked
+                last = None; // re-emit when the overlay is shown again
             }
             thread::sleep(Duration::from_millis(delay));
         }

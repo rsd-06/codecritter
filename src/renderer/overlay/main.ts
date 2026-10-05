@@ -57,6 +57,7 @@ export function startOverlay(
   };
   applySettings(initial);
 
+  let peeking = false; // peeking: the head is clickable (menu) but must not be dragged off its edge
   const offs = [
     bridge.onSettings(applySettings),
     bridge.onCursor((c) => {
@@ -67,7 +68,10 @@ export function startOverlay(
     bridge.onAgent((e) => driver.handleAgent(e)),
     bridge.onReminder((r) => driver.handleReminder(r)),
     bridge.onPomodoro((p) => driver.handlePomodoro(p)),
-    bridge.onPeek((p) => driver.handlePeek(p)),
+    bridge.onPeek((p) => {
+      peeking = p;
+      driver.handlePeek(p);
+    }),
   ];
   void bridge.getSettings().then((s) => applySettings(s)).catch(() => undefined);
 
@@ -107,7 +111,7 @@ export function startOverlay(
   };
   const onDown = (e: PointerEvent): void => {
     if (e.button !== 0 || !stage.hitTest(e.clientX, e.clientY)) return;
-    if (!current.reactions.drag) return;
+    if (!current.reactions.drag || peeking) return;
     dragging = true;
     last = { x: e.screenX, y: e.screenY };
     canvas.setPointerCapture(e.pointerId);
