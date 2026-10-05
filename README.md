@@ -8,7 +8,7 @@
 
 Free, open source, no telemetry. Windows installer is 1.5 MB.
 
-[**Download for Windows**](https://github.com/rsd-06/codecritter/releases/latest) · [AI agents](docs/agents.md) · [Make a character](docs/characters.md) · [Contributing](CONTRIBUTING.md)
+[**Download for Windows**](https://github.com/rsd-06/codecritter/releases/latest) · [Website](https://codecritter.vercel.app) · [AI agents](docs/agents.md) · [Make a character](docs/characters.md) · [Contributing](CONTRIBUTING.md)
 
 <a href="docs/media/launch.mp4"><img src="docs/media/launch-poster.jpg" alt="Watch the 20-second CodeCritter launch video" width="640"></a>
 

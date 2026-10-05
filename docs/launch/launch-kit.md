@@ -1,6 +1,6 @@
 # CodeCritter launch kit
 
-Everything here is a draft for **you** to post from your own accounts. Replace `{SITE}` with the Vercel URL and `{REPO}` with https://github.com/rsd-06/codecritter.
+Everything here is a draft for **you** to post from your own accounts. Replace `https://codecritter.vercel.app` with the Vercel URL and `https://github.com/rsd-06/codecritter` with https://github.com/rsd-06/codecritter.
 
 Ground rules that make launches work (and keep accounts safe):
 - Post each piece once per platform. No repeated identical posts, no mass tagging, no unsolicited replies under other people's posts. Platforms throttle or ban that, and devs hate it.
@@ -19,14 +19,14 @@ Ground rules that make launches work (and keep accounts safe):
 >
 > Free, open source, 1.5 MB.
 >
-> {SITE}
+> https://codecritter.vercel.app
 
 ### Thread (reply to the launch post)
 1. > How it works: your AI agent's hook sends a tiny status event to 127.0.0.1. The critter thinks along, hops when the agent is done, and panics on errors. One click installs the hook for Claude Code, Codex, Cursor, Gemini, Kiro, Copilot and OpenCode.
 2. > It also nags me (nicely) to stretch and drink water, runs Pomodoros, and hides at the screen edge when I'm in a fullscreen video.
 3. > Privacy: it counts keystrokes, it never knows which keys. No telemetry, no network calls.
 4. > Built with Tauri + Rust + TypeScript. Started on Electron (~200 MB) and ported to Tauri: now ~55 MB RAM and a 1.5 MB installer.
-5. > It's MIT and I'd love help: macOS/Linux testing, new characters, more agents. {REPO}
+5. > It's MIT and I'd love help: macOS/Linux testing, new characters, more agents. https://github.com/rsd-06/codecritter
 
 ### Follow-up posts (spread over the next 1–2 weeks, one per day max)
 - Build-in-public: "Electron → Tauri: what the memory numbers actually looked like" (use the table from README Performance).
@@ -47,8 +47,8 @@ Hashtags (max 2): #buildinpublic #opensource
 >
 > Free + open source. Link in replies.
 
-Reply 1: `{SITE}`
-Reply 2: > Windows installer is 1.5 MB. Mac/Linux folks: it builds from source and I'd love testers. {REPO}
+Reply 1: `https://codecritter.vercel.app`
+Reply 2: > Windows installer is 1.5 MB. Mac/Linux folks: it builds from source and I'd love testers. https://github.com/rsd-06/codecritter
 
 ---
 
@@ -75,7 +75,7 @@ Audio: a trending lo-fi or chiptune sound from the Reels library (keeps reach up
 >
 > #coding #developer #programming #pixelart #opensource #setup #codinglife #ai
 
-Put `{SITE}` in your bio link for launch week. Post 2–3 Stories the same day: the GIFs, a poll ("Stitch or Yoda?"), and the link sticker.
+Put `https://codecritter.vercel.app` in your bio link for launch week. Post 2–3 Stories the same day: the GIFs, a poll ("Stitch or Yoda?"), and the link sticker.
 
 ---
 
