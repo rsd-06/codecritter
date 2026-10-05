@@ -79,7 +79,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 ## v0.2 Tauri port (spec: docs/TAURI_PLAN.md)
 - [x] Rust toolchain on D:\dev-tools; Electron preserved at tag `electron-final`
 - [x] T1 Foundation: scaffold, store, windows, bridge, tray, shortcuts, autostart, cursor hit-test click-through
-- [ ] T2a Input (rdev) + cursor + peek
+- [x] T2a Input (rdev) + cursor + peek
 - [x] T2b Agents server + installers (Rust) + tests
 - [ ] T2c Scheduler + pomodoro + sync (Rust) + tests
 - [ ] T3 Ship: bundles, CI, release workflow, remove Electron, docs, final metrics
