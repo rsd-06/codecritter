@@ -86,7 +86,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 
 ## v0.2 QA (after Tauri migration) [lead-requested by user]
 - [x] Full end-to-end mock scenario run of every feature on the Tauri build (scripted: input bursts, scroll, cursor near/far/over, petting, drag/shake, idle→sleep, reminders, pomodoro cycle, messages, pinned note, name, peek on/off all edges, agent events for every agent, settings round-trip, export/import, tray, shortcuts) with screenshots + metrics. Done: `docs/QA-v0.2.md` (14 PASS, 2 PARTIAL: real 300 s sleep and multi-monitor; 3 bugs fixed, open issues O1-O7 listed there)
-- [ ] Real Claude Code integration: install hook from Settings → AI Agents (writes real ~/.claude/settings.json, with backup), run a real `claude -p` prompt, confirm thinking → done reactions, then verify uninstall restores the file
+- [x] Real Claude Code integration: install hook from Settings → AI Agents (writes real ~/.claude/settings.json, with backup), run a real `claude -p` prompt, confirm thinking → done reactions, then verify uninstall restores the file
 
 - [x] QA follow-ups: agent Install UX + inline result + debug CRITTER_AGENT_HOME, reminder queue, peek hit-testing + note hidden + toggle logging, NSIS registry cleanup, async open_settings (see docs/QA-v0.2.md "Fixed in the follow-up pass")
 
