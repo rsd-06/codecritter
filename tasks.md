@@ -75,3 +75,11 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] Playground cold-cache Invalid hook call (optimizeDeps + dedupe)
 - [x] Bubble text capped to 2 lines, clamped inside stage when scaled
 - [x] Fallback hook scripts forward stdin message (prompt/message/last_assistant_message)
+
+## v0.2 Tauri port (spec: docs/TAURI_PLAN.md)
+- [x] Rust toolchain on D:\dev-tools; Electron preserved at tag `electron-final`
+- [ ] T1 Foundation: scaffold, store, windows, bridge, tray, shortcuts, autostart, cursor hit-test click-through
+- [ ] T2a Input (rdev) + cursor + peek
+- [ ] T2b Agents server + installers (Rust) + tests
+- [ ] T2c Scheduler + pomodoro + sync (Rust) + tests
+- [ ] T3 Ship: bundles, CI, release workflow, remove Electron, docs, final metrics
