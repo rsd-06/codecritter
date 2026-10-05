@@ -16,6 +16,7 @@ export const AgentsTab = memo(function AgentsTab() {
   const [status, setStatus] = useState<Status>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   const port = settings.agents.port;
 
   const refresh = useCallback(() => {
@@ -27,9 +28,14 @@ export const AgentsTab = memo(function AgentsTab() {
     setPending(null);
     setBusy(p.id);
     const call = p.action === 'install' ? bridge.installAgent(p.id) : bridge.uninstallAgent(p.id);
+    const report = (ok: boolean, text: string): void => {
+      setResult({ ok, text: `${p.name}: ${text}` });
+      toast(text, ok);
+    };
     call.then(
-      (r) => toast(r.message || (r.ok ? 'Done' : 'Failed'), r.ok),
-      (e: unknown) => toast(e instanceof Error ? e.message : 'Failed', false),
+      (r) => report(r.ok, r.message || (r.ok ? 'Done' : 'Failed')),
+      // Tauri rejects with the command's error as a plain string, not an Error.
+      (e: unknown) => report(false, typeof e === 'string' ? e : e instanceof Error ? e.message : 'Failed'),
     ).finally(() => {
       setBusy(null);
       refresh();
@@ -60,6 +66,7 @@ export const AgentsTab = memo(function AgentsTab() {
         onCommit={(n) => save((s) => ({ agents: { ...s.agents, port: n } }))}
       />
 
+      <p className="hint">Install asks for confirmation first, then writes the hook entries.</p>
       <table className="table">
         <caption className="sr">Supported agents</caption>
         <thead>
@@ -114,6 +121,12 @@ export const AgentsTab = memo(function AgentsTab() {
         </tbody>
       </table>
 
+      {result && (
+        <p className={result.ok ? 'status ok' : 'status bad'} role="status" data-testid="agent-result">
+          {result.text}
+        </p>
+      )}
+
       <h3>Send test event</h3>
       <div className="actions">
         {(['thinking', 'done', 'error'] as const).map((t) => (
@@ -135,7 +148,7 @@ export const AgentsTab = memo(function AgentsTab() {
       <ConfirmDialog
         open={pending !== null}
         title={pending ? `${pending.action === 'install' ? 'Install' : 'Uninstall'} ${pending.name} hooks?` : ''}
-        confirmLabel={pending?.action === 'install' ? 'Install' : 'Uninstall'}
+        confirmLabel={pending?.action === 'install' ? 'Install hooks' : 'Remove hooks'}
         onCancel={() => setPending(null)}
         onConfirm={() => pending && run(pending)}
         body={

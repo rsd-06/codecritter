@@ -522,6 +522,9 @@ body {
 .status.ok::before {
   content: '\25CF ';
 }
+.status.bad {
+  color: var(--bad);
+}
 .status.manual {
   color: var(--dim);
   font-style: italic;

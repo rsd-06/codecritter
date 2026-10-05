@@ -26,7 +26,18 @@ static LIFECYCLE: Mutex<()> = Mutex::new(());
 static HOOK_SOURCE: Mutex<Option<PathBuf>> = Mutex::new(None);
 
 fn home() -> Option<PathBuf> {
-    dirs::home_dir()
+    agent_home_override().or_else(dirs::home_dir)
+}
+
+/// Debug builds only: `CRITTER_AGENT_HOME` redirects the installers (install / uninstall / status)
+/// to a sandbox directory so the real `~/.claude` etc. are never touched during testing.
+#[cfg(debug_assertions)]
+fn agent_home_override() -> Option<PathBuf> {
+    std::env::var_os("CRITTER_AGENT_HOME").filter(|v| !v.is_empty()).map(PathBuf::from)
+}
+#[cfg(not(debug_assertions))]
+fn agent_home_override() -> Option<PathBuf> {
+    None
 }
 
 /// Find `bin/critter-hook.mjs`: bundled resource first, then the repo (dev builds).
@@ -407,5 +418,21 @@ mod e2e_tests {
         let (ok2, _) = super::uninstall_in(home.path(), "cursor");
         assert!(ok2);
         assert!(!super::install_in(home.path(), "nope").0);
+    }
+
+    #[test]
+    fn claude_code_install_status_uninstall_roundtrip_in_temp_home() {
+        use super::installers::status_all_in;
+        let home = TempDir::new("cc-roundtrip");
+        let installed = |h: &std::path::Path| status_all_in(h)["claude-code"]["installed"].as_bool().unwrap();
+        assert!(!installed(home.path()));
+        let (ok, msg) = super::install_in(home.path(), "claude-code");
+        assert!(ok, "{msg}");
+        let file = home.path().join(".claude").join("settings.json");
+        assert!(std::fs::read_to_string(&file).unwrap().contains("critter-hook"));
+        assert!(installed(home.path()));
+        let (ok, msg) = super::uninstall_in(home.path(), "claude-code");
+        assert!(ok, "{msg}");
+        assert!(!installed(home.path()));
     }
 }
