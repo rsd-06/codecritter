@@ -39,7 +39,7 @@ pub fn drag_end(app: AppHandle) {
 }
 
 #[tauri::command]
-pub fn open_settings(app: AppHandle) {
+pub async fn open_settings(app: AppHandle) {
     winmgr::open_settings(&app);
 }
 
