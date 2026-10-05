@@ -31,7 +31,7 @@ for d in (BUILD, TRAY, MEDIA):
 MANIFEST = json.loads((OUT / "manifest.json").read_text())
 CHARS = ("stitch", "yoda")
 # head crop boxes in the 64x72 frame (left, top, right, bottom); padded to a square later
-HEAD_BOX = {"stitch": (5, 6, 59, 54), "yoda": (1, 14, 63, 48)}
+HEAD_BOX = {"stitch": (8, 24, 56, 57), "yoda": (0, 27, 64, 53)}
 ICON_BG = {"stitch": (27, 42, 92, 255), "yoda": (43, 58, 23, 255)}
 PAGE_BG = (38, 42, 56, 255)
 
@@ -41,9 +41,9 @@ def frame(char: str, group: str, name: str) -> Image.Image:
 
 
 def square_head(char: str, expr: str = "happy") -> Image.Image:
-    """Head crop padded (transparent) to a 64x64 square, centred."""
+    """Head crop padded (transparent) to a tight square, centred."""
     im = frame(char, "expr", expr).crop(HEAD_BOX[char])
-    side = 64
+    side = max(im.width, im.height) + 2
     sq = Image.new("RGBA", (side, side), (0, 0, 0, 0))
     sq.alpha_composite(im, ((side - im.width) // 2, (side - im.height) // 2))
     return sq
@@ -193,7 +193,7 @@ def draw_zzz(im: Image.Image, step: int) -> Image.Image:
     px = im.load()
     z = ["#####", "   # ", "  #  ", " #   ", "#####"]
     small = ["###", " # ", "###"]
-    for n, (glyph, x, y) in enumerate(((small, 44, 30), (z, 49, 22), (small, 56, 14))):
+    for n, (glyph, x, y) in enumerate(((small, 44, 38), (z, 49, 30), (small, 56, 22))):
         age = (step - n) % 6
         if age > 3:
             continue
