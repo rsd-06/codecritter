@@ -18,6 +18,7 @@ export class OverlayDriver implements Tickable {
       {
         pose: stage.pose,
         head: () => stage.head,
+        eyes: () => stage.eyes,
         bubble: stage.bubble,
         particles: stage.particles,
         sound,

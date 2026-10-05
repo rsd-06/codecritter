@@ -1,143 +1,157 @@
-// Yoda: chibi green jedi master with long pointed ears, sparse hair, robe and a wooden cane.
+// Yoda: chibi green jedi master: wide bald head, long horizontal ears, heavy brow, half-lidded eyes,
+// cream tunic under a brown cloak, three-fingered hands and a gnarled gimer stick.
+// Footprint: ~44 px tall (hair y~19 to feet y=62), ears span almost the full 64 px box.
 import type { Palette } from '@shared/types';
 import { GridBuilder, makePart, type Part } from '../engine/rig';
 import type { EarPose, MouthName } from '../engine/types';
 import { createRigCharacter, defaultPoses, mirrorArm, splitLR, type ArmSpec, type Pt, type RigDef } from './kit';
+import { buildCup, buildLaptop, buildNote, buildRoll } from './props';
+
+const EYE = { lx: 26.5, rx: 37.5, cy: 34.5, hw: 3.2, hh: 2.6 };
+const HEAD_CY = 33;
+const MOUTH_Y = 40;
 
 function buildHead(): Part {
   const b = new GridBuilder();
-  b.ellipse(32, 25.5, 13.8, 12.2, 'b').ellipse(32, 30.5, 11.8, 8, 'b');
-  // forehead wrinkles
-  b.rect(26, 16, 5, 1, 's', { over: 'b' }).rect(33, 16, 5, 1, 's', { over: 'b' });
-  b.both(() => b.rect(24, 18, 4, 1, 's', { over: 'b' }));
-  b.rect(30, 18, 4, 1, 's', { over: 'b' });
-  // brow ridges
-  b.both(() => b.rect(21, 20, 7, 1, 's', { over: 'b' }));
-  // nose + cheek wrinkles
-  b.rect(31, 27, 2, 2, 's');
-  b.both(() => {
-    b.set(23, 32, 's', { over: 'b' }).set(22, 31, 's', { over: 'b' }).set(23, 34, 's', { over: 'b' });
-  });
+  // wide domed cranium tapering to a smaller chin
+  b.ellipse(32, HEAD_CY, 11.8, 9.2, 'b').ellipse(32, 37.6, 9.6, 5.6, 'b');
   b.underShade('b', 's');
   b.topLight('b', 'u');
+  // heavy brow ridge (shadow underneath, highlight on top)
+  b.both(() => b.rotEllipse(26.4, 31.2, 4.6, 1.3, -6, 's', { over: 'b' }));
+  // forehead wrinkles
+  b.rect(29, 26, 6, 1, 's', { over: 'b' });
+  b.both(() => b.set(28, 25, 's', { over: 'b' }).rect(25, 28, 4, 1, 's', { over: 'b' }));
+  // small nose: bridge highlight + nostril shadow
+  b.set(31, 37, 'u').set(32, 37, 'u').rect(31, 38, 2, 1, 's');
+  // cheek wrinkles / jowls
+  b.both(() => b.set(23, 38, 's', { over: 'b' }).set(24, 39, 's', { over: 'b' }));
   return makePart(b.rows());
 }
 
 function buildHair(): Part {
   const b = new GridBuilder();
   const strand = (pts: Pt[]) => pts.forEach(([x, y]) => b.set(x, y, 'H'));
+  // a few wispy white strands on the crown and behind the ears
   strand([
-    [28, 13],
-    [28, 12],
-    [27, 11],
-    [27, 10],
-    [26, 9],
+    [28, 24],
+    [27, 23],
+    [27, 22],
+    [26, 21],
   ]);
   strand([
-    [32, 12],
-    [32, 11],
-    [33, 10],
-    [33, 9],
-    [34, 8],
+    [32, 24],
+    [32, 23],
+    [33, 22],
+    [33, 21],
+    [34, 20],
   ]);
   strand([
-    [36, 13],
-    [36, 12],
-    [37, 11],
-    [38, 10],
+    [36, 24],
+    [37, 23],
+    [38, 22],
   ]);
   strand([
-    [23, 16],
-    [22, 15],
-    [21, 15],
+    [22, 28],
+    [21, 27],
+    [20, 27],
   ]);
   strand([
-    [41, 16],
-    [42, 15],
-    [43, 15],
+    [42, 28],
+    [43, 27],
+    [44, 27],
   ]);
   return makePart(b.rows(), { outline: false });
 }
 
 function buildBody(): Part {
   const b = new GridBuilder();
-  // robe
+  // brown outer cloak
   b.poly(
     [
-      [25.5, 38],
-      [38.5, 38],
-      [43.5, 61],
-      [20.5, 61],
+      [25, 41],
+      [39, 41],
+      [44, 61.5],
+      [20, 61.5],
     ],
     'a',
   );
-  b.ellipse(32, 41.5, 9.5, 4, 'a');
-  // tunic V + belt
+  b.ellipse(32, 43.5, 8.6, 3.4, 'a');
+  // cream inner robe showing down the front, crossing at the chest
   b.poly(
     [
-      [28.5, 38],
-      [35.5, 38],
-      [32, 48],
+      [27.6, 41],
+      [36.4, 41],
+      [35.6, 61.5],
+      [28.4, 61.5],
     ],
-    'A',
+    'F',
     { over: 'a' },
   );
-  b.rect(22, 51, 20, 2, 'D', { over: 'a' });
-  b.rect(31, 51, 2, 2, 'y');
-  // folds and hem
-  b.rect(27, 54, 1, 7, 'z', { over: 'a' }).rect(36, 54, 1, 7, 'z', { over: 'a' });
-  b.rect(21, 60, 22, 1, 'z', { over: 'a' });
-  b.underShade('a', 'z');
+  // crossing lapels (left over right) and the V neckline
+  for (let i = 0; i < 6; i++) b.set(28 + i, 41 + i, 'f');
+  for (let i = 0; i < 4; i++) b.set(36 - i, 41 + i, 'f');
+  b.rect(31, 41, 2, 1, 'f');
+  // cloak edges + folds + hem
+  b.both(() => b.poly([[27.2, 41], [28.2, 41], [29, 61.5], [27.9, 61.5]], 'z', { over: 'aF' }));
+  b.both(() => b.rect(23, 52, 1, 9, 'z', { over: 'a' }));
+  b.underShade('a', 'z').underShade('F', 'f');
+  // sash
+  b.rect(27, 51, 10, 1, 'D', { over: 'Ffz' });
   return makePart(b.rows());
 }
 
 function buildFeet(): Part {
   const b = new GridBuilder();
-  b.both(() => b.ellipse(27, 61, 3.4, 1.4, 'b'));
+  b.both(() => b.ellipse(27.4, 61.6, 2.7, 1.2, 'b'));
   return makePart(b.rows());
 }
 
-/* ears: long leaves pointing outwards, tips set per pose */
+/* ears: long, horizontal, slightly drooping, wider than the head; tips per pose */
 const EAR_TIP: Record<EarPose, Pt> = {
-  neutral: [3, 28],
-  perk: [3, 15],
-  droop: [7, 41],
-  back: [10, 31],
-  flare: [1, 22],
+  neutral: [2, 37],
+  perk: [3, 27],
+  droop: [6.5, 46],
+  back: [9.5, 38],
+  flare: [1, 32],
 };
 
 function buildEars(): Record<EarPose, { L: Part; R: Part }> {
   const out = {} as Record<EarPose, { L: Part; R: Part }>;
   (Object.keys(EAR_TIP) as EarPose[]).forEach((pose) => {
     const T = EAR_TIP[pose];
-    const B1: Pt = [21, 20];
-    const B2: Pt = [21, 30];
+    const B1: Pt = [22, 29.5];
+    const B2: Pt = [22, 37.5];
     const lerp = (a: Pt, c: Pt, t: number): Pt => [a[0] + (c[0] - a[0]) * t, a[1] + (c[1] - a[1]) * t];
     const off = (p: Pt, dy: number): Pt => [p[0], p[1] + dy];
     const outer: Pt[] = [
       B1,
-      off(lerp(B1, T, 0.25), -2.5),
-      off(lerp(B1, T, 0.55), -2.8),
-      off(lerp(B1, T, 0.85), -1.2),
+      off(lerp(B1, T, 0.25), -1.6),
+      off(lerp(B1, T, 0.55), -1.7),
+      off(lerp(B1, T, 0.85), -0.6),
       T,
-      off(lerp(B2, T, 0.85), 1.2),
-      off(lerp(B2, T, 0.55), 2.4),
-      off(lerp(B2, T, 0.25), 2.4),
+      off(lerp(B2, T, 0.85), 0.8),
+      off(lerp(B2, T, 0.55), 1.6),
+      off(lerp(B2, T, 0.25), 1.6),
       B2,
     ];
-    const cl = (x: number): number => 25 + (T[1] - 25) * ((21 - x) / (21 - T[0]));
+    // inner ear: the outer outline pulled towards the ear's centre line
+    const mid = (x: number): number => {
+      const k = (22 - x) / (22 - T[0]);
+      return 33.5 + (T[1] - 33.5) * k;
+    };
     const inner: Pt[] = outer.slice(1, -1).map(([x, y]) => {
-      const c = cl(x);
-      return [x + (x < 12 ? 1.5 : 0), c + (y - c) * 0.52] as Pt;
+      const c = mid(x);
+      return [x + (x < 10 ? 1.6 : 0), c + (y - c) * 0.5] as Pt;
     });
     const b = new GridBuilder();
     b.both(() => {
       b.poly(outer, 'b');
-      b.poly([[21, 22], ...inner, [21, 28.5]], 'p', { over: 'b' });
-      // wrinkle lines
-      for (const f of [0.3, 0.5, 0.7]) {
-        const p = lerp(B1, T, f);
-        b.set(Math.round(p[0]), Math.round(p[1] - 1), 's', { over: 'b' });
+      b.poly([[22, 31.2], ...inner, [22, 35.8]], 'i', { over: 'b' });
+      // shading along the lower edge of the ear
+      for (const f of [0.3, 0.55]) {
+        const p = lerp(B2, T, f);
+        b.set(Math.round(p[0]), Math.round(p[1] + 0.6), 's', { over: 'b' });
       }
     });
     out[pose] = splitLR(b);
@@ -145,18 +159,19 @@ function buildEars(): Record<EarPose, { L: Part; R: Part }> {
   return out;
 }
 
+/* thin, wide mouth */
 const MOUTH_ROWS: Record<MouthName, string[]> = {
-  neutral: ['.ooooo.', 'o.....o'],
+  neutral: ['..ooooo..', '.o.....o.'],
   happy: ['o.......o', '.ooooooo.'],
   open: ['.ooooo.', 'oRRRRRo', 'oRTTTRo', '.ooooo.'],
   o: ['.ooo.', 'oRRRo', '.ooo.'],
   flat: ['ooooooo'],
-  smirk: ['.....oo.', '.oooo...', 'oo......'],
-  'cat-smile': ['.oo..oo.', 'o..oo..o'],
+  smirk: ['......oo', '.ooooo..', 'oo......'],
+  'cat-smile': ['o..oo..o', '.oo..oo.'],
   grin: ['o.......o', 'oWWWWWWWo', '.ooooooo.'],
   wobbly: ['.o..o..o', 'o.oo.oo.'],
   tongue: ['.ooooo.', '..oTTo.', '..oTTo.', '...oo..'],
-  yawn: ['.ooooo.', 'oRRRRRo', 'oRTTTRo', 'oRTTTRo', '.ooooo.'],
+  yawn: ['.ooooo.', 'oRRRRRo', 'oRTTTRo', '.ooooo.'],
 };
 
 function buildMouths(oy: number): Record<MouthName, Part> {
@@ -168,63 +183,44 @@ function buildMouths(oy: number): Record<MouthName, Part> {
   return out;
 }
 
-const S_L: Pt = [25, 45];
+const S_L: Pt = [26, 46];
 const arm = (h: Pt, s: Pt = S_L): [Pt, Pt] => [s, h];
 const pair = (l: [Pt, Pt]): { L: [Pt, Pt]; R: [Pt, Pt] } => ({ L: l, R: mirrorArm(l) });
-const CANE_HAND: Pt = [48, 48];
+const CANE_HAND: Pt = [45, 50];
 
 const ARMS: ArmSpec = {
   sleeve: 'a',
   hand: 'b',
-  r: 2.2,
-  hr: 2.4,
-  claw: null,
+  r: 1.8,
+  hr: 1.8,
+  // three little fingers
+  claw: 'b',
+  clawAt: 0.4,
+  clawSpread: 1.3,
   poses: {
-    down: { L: arm([22, 53]), R: [[39, 45], CANE_HAND] },
-    'knead-L': { L: arm([26, 57]), R: mirrorArm(arm([24, 50])) },
-    'knead-R': { L: arm([24, 50]), R: mirrorArm(arm([26, 57])) },
-    up: pair(arm([7, 36], [23, 44])),
-    'hold-cup': pair(arm([27, 49])),
-    'hold-paper': pair(arm([24, 50])),
-    chin: { L: arm([22, 53]), R: [[39, 45], [36, 40]] },
-    wave0: { L: arm([22, 53]), R: [[39, 45], [48, 34]] },
-    wave1: { L: arm([22, 53]), R: [[39, 45], [50, 36]] },
+    down: { L: arm([23.5, 53]), R: [[38, 46], CANE_HAND] },
+    'knead-L': { L: arm([27, 57.5]), R: mirrorArm(arm([25, 51.5])) },
+    'knead-R': { L: arm([25, 51.5]), R: mirrorArm(arm([27, 57.5])) },
+    up: pair(arm([10.5, 40], [25.5, 45])),
+    'hold-cup': pair(arm([27.5, 51.5])),
+    'hold-paper': pair(arm([26, 52.5])),
+    chin: { L: arm([23.5, 53]), R: [[38, 46], [35.5, 42]] },
+    wave0: { L: arm([23.5, 53]), R: [[38, 46], [45, 38]] },
+    wave1: { L: arm([23.5, 53]), R: [[38, 46], [46.5, 40]] },
   },
 };
 
+/* gnarled gimer stick */
 function buildCane(): Part {
   const b = new GridBuilder();
-  b.rect(48, 36, 2, 26, 'B').rect(49, 36, 1, 26, 'D');
-  b.ellipse(49, 35, 3, 2.6, 'B').set(50, 36, 'D');
+  b.capsule(45.5, 61.5, 45, 50, 0.8, 'B').capsule(45, 50, 46, 40, 0.8, 'B');
+  b.ellipse(46, 39.4, 1.9, 1.5, 'B');
+  b.set(44, 38, 'B').set(48, 38, 'B'); // twigs
+  b.set(46, 44, 'D').set(45, 53, 'D').set(46, 57, 'D').set(46, 39, 'D'); // knots
   return makePart(b.rows(), { outlineCh: 'D' });
-}
-function buildCup(): Part {
-  const b = new GridBuilder();
-  b.stamp(['CCCCCCCC', 'CWCCCCCC', 'CWccccCC', 'CWccccCC', 'CCccccCC', 'CCccccCC', '.CccccC.', '.CCCCCC.'], 28, 42);
-  return makePart(b.rows());
-}
-function buildLaptop(): Part {
-  const b = new GridBuilder();
-  b.rect(24, 49, 16, 9, 'G').rect(22, 58, 20, 2, 'g');
-  b.rect(31, 52, 2, 2, 'W').underShade('G', 'g');
-  return makePart(b.rows());
-}
-function buildNote(): Part {
-  const b = new GridBuilder();
-  b.rect(27, 43, 10, 10, 'Y').rect(29, 46, 6, 1, 'y').rect(29, 48, 5, 1, 'y').rect(29, 50, 6, 1, 'y');
-  return makePart(b.rows());
-}
-function buildRoll(): Part {
-  const b = new GridBuilder();
-  b.rect(23, 45, 18, 5, 'P').rect(23, 49, 18, 1, 'Q');
-  b.both(() => {
-    b.ellipse(23, 47.5, 2.8, 2.8, 'P').ellipse(23, 47.5, 1.5, 1.5, 'Q').set(23, 47, 'P');
-  });
-  return makePart(b.rows());
 }
 
 export function createYodaRig(): RigDef {
-  const poses = defaultPoses();
   return {
     id: 'yoda',
     head: buildHead(),
@@ -232,13 +228,16 @@ export function createYodaRig(): RigDef {
     body: buildBody(),
     feet: buildFeet(),
     ears: buildEars(),
-    mouths: buildMouths(33),
-    eye: { style: 'sclera', lx: 26, rx: 38, cy: 26, hw: 4, hh: 3, baseLid: 2, browDy: 3 },
+    mouths: buildMouths(MOUTH_Y),
+    eye: { style: 'sclera', ...EYE, irisR: 1.9, baseLid: 2, browDy: 2, browW: 5 },
     arms: ARMS,
-    poses,
-    props: { cup: buildCup(), laptop: buildLaptop(), note: buildNote(), cane: buildCane(), roll: buildRoll() },
+    poses: defaultPoses(),
+    props: { cup: buildCup(29, 47), laptop: buildLaptop(), note: buildNote(47), cane: buildCane(), roll: buildRoll(50) },
+    sheet: { x: 26, y: 54, w: 12 },
     autoProp: 'cane',
-    face: { blushY: 31, blushDx: 4, sweat: [44, 14], vein: [43, 13], tearY: 30 },
+    face: { blushY: 37, blushDx: 3, sweat: [41, 27], vein: [36, 24], tearY: 37, steam: [14, 22] },
+    headCy: HEAD_CY,
+    shadowW: 13,
   };
 }
 

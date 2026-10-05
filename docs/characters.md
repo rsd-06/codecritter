@@ -6,9 +6,9 @@ A CodeCritter character is **data**: a handful of small pixel-grid parts, a pale
 
 ## Concepts
 
-- **Logical canvas**: every sprite lives in a 64x64 box. The character sits bottom-centre of the 128x112 stage; the feet anchor is at (32, 62). The overlay upscales by an integer factor with smoothing off.
+- **Logical canvas**: every sprite lives in a 64x64 box. The character sits bottom-centre of the 128x112 stage; the feet anchor is at (32, 62). The overlay upscales by an integer factor with smoothing off. The built-in characters use ~46 px of the box height (head top around y=16); leave headroom so hops and the 1.4x stretch stay inside the stage.
 - **Grid**: a part is an array of strings, one char per pixel, `.` (or space) is transparent. Parts are trimmed and compiled once per palette (cached), so authoring cost is paid once.
-- **Parts** (`RigDef` in `kit.ts`): `head`, optional `hair`, `body`, optional `feet`, `ears` (one L/R pair for each ear pose), `mouths` (one part per mouth name), `arms` (generated from shoulder/hand points per paw pose), `props` (cup, laptop, note, roll, optional cane), plus `eye` geometry, per-pose offsets and face anchor points.
+- **Parts** (`RigDef` in `kit.ts`): `head`, optional `hair`, `body`, optional `feet`, `ears` (one L/R pair for each ear pose), `mouths` (one part per mouth name), `arms` (generated from shoulder/hand points per paw pose), `props` (cup, laptop, note, roll, optional cane), plus `eye` geometry, per-pose offsets, face anchor points (`face`: blush, sweat, vein, tear, steam), `headCy` (head centre y: particles, petting), `sheet` (where the paper hangs from the roll) and `shadowW`. The engine derives `metrics` (head top incl. ears/hair, peek depth) from the parts, and `anchors(pose)` gives the head top, head centre and eye centres for any pose: bubbles, the pomodoro widget, peek placement and cursor tracking all use them, so a character of any size works without engine changes.
 - Eyes, brows and the face extras (blush, sweat, tears, anger vein, steam) are **drawn procedurally** from the `eye`/`face` geometry, so pupils can follow the cursor and expressions can blend.
 
 ## Colour keys
@@ -26,8 +26,9 @@ Characters never contain hex colours for body parts; they use keys, which map to
 | `k` | `pupil` | eye glint |
 | `a` | `accent` | clothing or accent (Yoda's robe) |
 | `u d l q A z` | derived | body light, body deep, belly shade, ear shade, accent light, accent dark |
+| `h i n` | derived | iris (eye pulled towards green-brown), pink inner ear (earInner pulled towards pink), nose/deep interior (outline mixed with body shade) |
 
-Fixed colours that ignore the palette (so props look right on any colour scheme): `W` white, `V` off-white, `R/r` red, `T` pink, `N` near-black, `C` glass, `c` water, `B/D` wood, `Y/y` sticky-note yellow, `P/Q` paper, `G/g` greys, `H` hair white, `L` laptop glow. The full list is `FIXED_COLORS` in `engine/rig.ts`.
+Fixed colours that ignore the palette (so props look right on any colour scheme): `W` white, `V` off-white, `R/r` red, `T` pink, `N` near-black, `C` glass, `c` water, `B/D` wood, `Y/y` sticky-note yellow, `P/Q` paper, `F/f` cream cloth, `G/g` greys, `H` hair white, `L` laptop glow. The full list is `FIXED_COLORS` in `engine/rig.ts`.
 
 Palette fields are defined in `src/shared/types.ts` (`Palette`) and defaults per character live in `src/shared/defaults.ts` (`DEFAULT_PALETTES`).
 
@@ -69,7 +70,7 @@ mychar: {
 }
 ```
 
-Brow and eye knobs live in `EyeSpec` (`style: 'solid' | 'sclera'`, eye centres and half sizes, `baseLid`, `browDy`, optional `browKey` so brows stay readable on dark eye patches).
+Brow and eye knobs live in `EyeSpec` (`style: 'solid' | 'sclera'`, eye centres and half sizes, `baseLid`, `browDy`, `browW`, optional `browKey` so brows stay readable on dark eye patches, `tilt` for solid oval eyes, `irisR` for sclera eyes, `travel` = max pupil offset in px). Pupils get a per-eye look (`lookX +/- conv`) from `behavior/look.ts`, and sclera irises are clipped to the eye white so they can never leave it.
 
 ## Registering the character
 

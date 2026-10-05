@@ -15,7 +15,10 @@ import {
 } from '../engine/rig';
 import type {
   BrowKind,
+  CharAnchors,
+  CharMetrics,
   Character,
+  Pt2,
   EarPose,
   EyeKind,
   MouthName,
@@ -40,6 +43,14 @@ export interface EyeSpec {
   browDy: number;
   /** colour key for the brows (default outline 'o'); Stitch uses a light body tone to read on his dark patches */
   browKey?: string;
+  /** brow length in px (default 4) */
+  browW?: number;
+  /** solid eyes: tilt in degrees (left eye clockwise = top leans inward; mirrored on the right) */
+  tilt?: number;
+  /** sclera eyes: iris radius (default 2) */
+  irisR?: number;
+  /** max pupil travel in px [x, y] for |look| = 1 (defaults depend on style) */
+  travel?: readonly [number, number];
 }
 
 export interface PoseParams {
@@ -59,6 +70,10 @@ export interface ArmSpec {
   r: number; // arm radius
   hr: number; // hand radius
   claw: string | null; // claw colour key (null = none)
+  /** claw distance from the hand centre relative to hr (default 0.6 = just outside) */
+  clawAt?: number;
+  /** perpendicular spacing of the 3 claws/fingers (default 1.7) */
+  clawSpread?: number;
   poses: Record<string, { L: [Pt, Pt]; R: [Pt, Pt] }>; // [shoulder, hand]
 }
 
@@ -75,10 +90,16 @@ export interface RigDef {
   poses: Record<PoseName, PoseParams>;
   /** held prop sprites (box coords) */
   props: { cup: Part; laptop: Part; note: Part; cane?: Part; roll: Part };
+  /** where the paper sheet hangs from the roll (top-left x/y, width), box coords */
+  sheet: { x: number; y: number; w: number };
   /** auto-show cane when paws are down (Yoda) */
   autoProp?: PropName;
-  /** blush cheek centres, sweat pos, vein pos, steam x offsets */
-  face: { blushY: number; blushDx: number; sweat: Pt; vein: Pt; tearY: number };
+  /** blush cheek centres, sweat pos, vein pos, tear start y, steam [x offset from centre, y] */
+  face: { blushY: number; blushDx: number; sweat: Pt; vein: Pt; tearY: number; steam: Pt };
+  /** head centre y (box coords, sit pose): particles and petting are relative to it */
+  headCy: number;
+  /** half width of the ground shadow */
+  shadowW: number;
 }
 
 export const FEET_Y = 62;
@@ -115,10 +136,14 @@ export function buildArm(spec: ArmSpec, s: Pt, h: Pt, clawVariant = 0): Part {
   if (spec.claw) {
     const px = -uy;
     const py = ux;
+    const at = spec.clawAt ?? 0.6;
+    const spread = spec.clawSpread ?? 1.7;
+    void clawVariant;
     for (const k of [-1, 0, 1]) {
-      const cx = Math.round(h[0] + ux * (spec.hr + 0.6 + (k === 0 ? 0.6 : 0)) + px * k * 1.7 + clawVariant * 0);
-      const cy = Math.round(h[1] + uy * (spec.hr + 0.6 + (k === 0 ? 0.6 : 0)) + py * k * 1.7);
-      b.set(cx - 0, cy - 0, spec.claw);
+      const reach = spec.hr + at + (k === 0 ? 0.6 : 0);
+      const cx = Math.floor(h[0] + ux * reach + px * k * spread);
+      const cy = Math.floor(h[1] + uy * reach + py * k * spread);
+      b.set(cx, cy, spec.claw);
     }
   }
   return makePart(b.rows());
@@ -159,17 +184,18 @@ export { mirrorRows };
 
 /* ---------------------------------------------------------------- paper sheet ---- */
 
-const sheetCache = new Map<number, Part>();
-/** Paper hanging from the roll; `len` rows long. */
-export function paperSheet(len: number): Part {
-  const hit = sheetCache.get(len);
+const sheetCache = new Map<string, Part>();
+/** Paper hanging from the roll; `len` rows long, top-left at (x, y), `w` wide. */
+export function paperSheet(len: number, x = 25, y = 50, w = 14): Part {
+  const key = `${len}:${x}:${y}:${w}`;
+  const hit = sheetCache.get(key);
   if (hit) return hit;
   const b = new GridBuilder();
-  b.rect(25, 50, 14, len, 'P');
-  for (let y = 3; y < len - 1; y += 3) b.rect(27, 50 + y, y % 2 ? 8 : 10, 1, 'Q');
-  b.rect(25, 50 + len - 1, 14, 1, 'Q');
+  b.rect(x, y, w, len, 'P');
+  for (let k = 3; k < len - 1; k += 3) b.rect(x + 2, y + k, k % 2 ? w - 6 : w - 4, 1, 'Q');
+  b.rect(x, y + len - 1, w, 1, 'Q');
   const part = makePart(b.rows(), { outlineCh: 'o' });
-  sheetCache.set(len, part);
+  sheetCache.set(key, part);
   return part;
 }
 
@@ -255,7 +281,63 @@ function drawSpiral(ctx: CanvasRenderingContext2D, cx: number, cy: number, color
 
 const KIND_LID: Partial<Record<EyeKind, number>> = { half: 0.42, sleepy: 0.62, squint: 0.38 };
 
-/** Draw both eyes. Returns nothing; all procedural, pupils follow look. */
+/** Symmetric rounding (Math.round(-0.5) is -0 but Math.round(0.5) is 1: that made left looks lag right looks). */
+export function sround(v: number): number {
+  return Math.sign(v) * Math.round(Math.abs(v));
+}
+
+/** Max pupil travel in px for |look| = 1. */
+export function eyeTravel(spec: EyeSpec): readonly [number, number] {
+  if (spec.travel) return spec.travel;
+  if (spec.style === 'solid') return [1.2, 1];
+  const ir = spec.irisR ?? 2;
+  return [Math.max(1, spec.hw - ir + 0.4), Math.max(0.6, spec.hh - ir + 0.4)];
+}
+
+/** Per-eye horizontal look: the left eye adds the convergence, the right eye subtracts it. */
+function eyeLookX(kind: EyeKind, lookX: number, conv: number, side: number): number {
+  if (kind === 'side-eye') return lookX >= 0 ? 1 : -1;
+  return Math.max(-1, Math.min(1, lookX + (side < 0 ? conv : -conv)));
+}
+
+/** Filled ellipse rotated by `deg` (clockwise), pixel-centre sampling, optional row clip / mask. */
+function fillRotEllipse(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  deg: number,
+  color: string,
+  clipTop = -Infinity,
+  clipBot = Infinity,
+  inside?: (x: number, y: number) => boolean,
+): void {
+  ctx.fillStyle = color;
+  const a = (deg * Math.PI) / 180;
+  const cos = Math.cos(a);
+  const sin = Math.sin(a);
+  const r = Math.max(rx, ry) + 1;
+  for (let y = Math.floor(cy - r); y <= Math.ceil(cy + r); y++) {
+    const pyc = y + 0.5;
+    if (pyc < clipTop || pyc > clipBot) continue;
+    let run = -1;
+    for (let x = Math.floor(cx - r); x <= Math.ceil(cx + r) + 1; x++) {
+      const dx = x + 0.5 - cx;
+      const dy = pyc - cy;
+      const u = dx * cos + dy * sin;
+      const v = -dx * sin + dy * cos;
+      const hit = (u * u) / (rx * rx) + (v * v) / (ry * ry) <= 1 && (!inside || inside(x + 0.5, pyc));
+      if (hit && run < 0) run = x;
+      if (!hit && run >= 0) {
+        ctx.fillRect(run, y, x - run, 1);
+        run = -1;
+      }
+    }
+  }
+}
+
+/** Draw both eyes. All procedural; pupils follow look (+ convergence). */
 function drawEyes(
   ctx: CanvasRenderingContext2D,
   spec: EyeSpec,
@@ -263,17 +345,18 @@ function drawEyes(
   open: number,
   lookX: number,
   lookY: number,
+  conv: number,
   colors: ColorMap,
   dx: number,
   dy: number,
-  mood: MouthName,
   t: number,
 ): void {
   const cy = spec.cy + dy;
   for (const side of [-1, 1] as const) {
     const cx = (side < 0 ? spec.lx : spec.rx) + dx;
-    if (spec.style === 'solid') drawSolidEye(ctx, spec, kind, open, lookX, lookY, colors, cx, cy, side, mood, t);
-    else drawScleraEye(ctx, spec, kind, open, lookX, lookY, colors, cx, cy, side, mood, t);
+    const lx = eyeLookX(kind, lookX, conv, side);
+    if (spec.style === 'solid') drawSolidEye(ctx, spec, kind, open, lx, lookY, colors, cx, cy, side, t);
+    else drawScleraEye(ctx, spec, kind, open, lx, lookY, colors, cx, cy, t);
   }
 }
 
@@ -288,6 +371,22 @@ function arc(ctx: CanvasRenderingContext2D, cx: number, hw: number, cy: number, 
   }
 }
 
+/** Closed eye: a flat lid line with lash ticks at both ends, sized to the eye. */
+function closedLid(ctx: CanvasRenderingContext2D, cx: number, cy: number, hw: number, color: string): void {
+  const half = Math.max(2, Math.round(hw) - 1);
+  px(ctx, cx - half, cy + 1, half * 2 + 1, 1, color);
+  px(ctx, cx - half - 1, cy, 1, 1, color);
+  px(ctx, cx + half + 1, cy, 1, 1, color);
+}
+
+function drawCross(ctx: CanvasRenderingContext2D, cx: number, cy: number, color: string): void {
+  ctx.fillStyle = color;
+  for (let i = -2; i <= 2; i++) {
+    ctx.fillRect(Math.round(cx + i - 0.5), Math.round(cy + i - 0.5), 1, 1);
+    ctx.fillRect(Math.round(cx + i - 0.5), Math.round(cy - i - 0.5), 1, 1);
+  }
+}
+
 function drawSolidEye(
   ctx: CanvasRenderingContext2D,
   spec: EyeSpec,
@@ -299,20 +398,11 @@ function drawSolidEye(
   cx: number,
   cy: number,
   side: number,
-  _mood: MouthName,
   t: number,
 ): void {
-  void side;
-  const fullRx = spec.hw;
-  const fullRy = spec.hh;
   if (kind === 'closed' || kind === 'happy') {
-    arc(ctx, cx, spec.hw, cy, C['e']!, kind === 'happy');
-    if (kind === 'closed') {
-      // flat sleepy lid with a lash tick
-      px(ctx, cx - 3, cy + 1, 7, 1, C['e']!);
-      px(ctx, cx - 4, cy, 1, 1, C['e']!);
-      px(ctx, cx + 3, cy, 1, 1, C['e']!);
-    }
+    if (kind === 'happy') arc(ctx, cx, spec.hw, cy, C['e']!, true);
+    else closedLid(ctx, cx, cy, spec.hw, C['e']!);
     return;
   }
   if (kind === 'hearts') {
@@ -325,39 +415,39 @@ function drawSolidEye(
     return;
   }
   if (kind === 'dizzy') {
-    ctx.fillStyle = C['W']!;
-    for (let i = -2; i <= 2; i++) {
-      ctx.fillRect(Math.round(cx + i - 0.5), Math.round(cy + i - 0.5), 1, 1);
-      ctx.fillRect(Math.round(cx + i - 0.5), Math.round(cy - i - 0.5), 1, 1);
-    }
+    drawCross(ctx, cx, cy, C['W']!);
     return;
   }
+  const [tx, ty] = eyeTravel(spec);
   const wide = kind === 'wide';
-  const rx = fullRx + (wide ? 0.6 : 0);
-  const ry = (fullRy + (wide ? 1.2 : 0)) * Math.max(0.12, open);
-  let lookXe = lookX;
-  if (kind === 'side-eye') lookXe = side * 0 + (lookX >= 0 ? 1 : -1);
-  const ox = Math.round(lookXe * 2);
-  const oy = Math.round(lookY * 1.5);
-  const lid = KIND_LID[kind] ?? 0;
-  const top = cy + oy - ry;
-  const clipTop = top + lid * 2 * ry;
-  const clipBot = kind === 'squint' ? cy + oy + ry - lid * 2 * ry : Infinity;
+  const rx = spec.hw + (wide ? 0.5 : 0);
+  const ry = (spec.hh + (wide ? 1 : 0)) * Math.max(0.12, open);
+  const ox = sround(lookX * tx);
+  const oy = sround(lookY * ty);
+  const ecx = cx + ox;
   const ecy = cy + oy + (kind === 'sleepy' ? 1 : 0);
-  fillEllipse(ctx, cx + ox, ecy, rx, ry, C['e']!, clipTop, clipBot);
-  const visible = (clipBot === Infinity ? cy + oy + ry : clipBot) - clipTop;
-  if (visible >= 5 && open > 0.6) {
-    px(ctx, cx + ox - 2.5, Math.max(clipTop + 1, top + 1.5), 2, 2, C['k']!);
-    px(ctx, cx + ox + 1, Math.min(cy + oy + ry - 2, ecy + 2), 1, 1, C['k']!);
+  const lid = KIND_LID[kind] ?? 0;
+  const top = ecy - ry;
+  const clipTop = top + lid * 2 * ry;
+  const clipBot = kind === 'squint' ? ecy + ry - lid * 2 * ry : Infinity;
+  const tilt = (spec.tilt ?? 0) * (side < 0 ? 1 : -1);
+  fillRotEllipse(ctx, ecx, ecy, rx, ry, tilt, C['e']!, clipTop, clipBot);
+  const visible = (clipBot === Infinity ? ecy + ry : clipBot) - clipTop;
+  if (visible >= 4 && open > 0.6 && kind !== 'sparkle') {
+    // one glossy highlight, upper-left on both eyes (single light source)
+    const hx = Math.round(ecx - rx * 0.42 - 0.5);
+    const hy = Math.round(Math.max(clipTop + 0.6, ecy - ry * 0.62) - 0.5);
+    px(ctx, hx, hy, 2, 2, C['k']!);
   }
   if (kind === 'sparkle') {
-    const sx = Math.round(cx + ox - 1);
-    const sy = Math.round(cy + oy - 2);
-    px(ctx, sx, sy - 1, 1, 5, C['W']!);
-    px(ctx, sx - 1, sy + 1, 3, 1, C['W']!);
+    const sx = Math.round(ecx - 0.5);
+    const sy = Math.round(ecy - 0.5);
+    px(ctx, sx, sy - 2, 1, 5, C['W']!);
+    px(ctx, sx - 2, sy, 5, 1, C['W']!);
   }
-  // eyelid line for sleepy/half (solid eyes read as a flat top edge)
-  if (lid > 0 && visible >= 2) px(ctx, cx + ox - rx + 0.5, clipTop - 1, rx * 2 - 1, 1, C['d']!);
+  // eyelid line for sleepy/half/squint (solid eyes read as a flat top edge)
+  if (lid > 0 && visible >= 2)
+    px(ctx, Math.round(ecx - rx + 0.5), Math.round(clipTop - 1), Math.round(rx * 2 - 1), 1, C['d']!);
 }
 
 function drawScleraEye(
@@ -370,12 +460,8 @@ function drawScleraEye(
   C: ColorMap,
   cx: number,
   cy: number,
-  side: number,
-  mood: MouthName,
   t: number,
 ): void {
-  const rx = spec.hw;
-  const ry = spec.hh;
   if (kind === 'hearts') {
     drawSprite(ctx, HEART, Math.round(cx - 3.5), Math.round(cy - 3), C);
     px(ctx, cx - 2, cy - 2, 1, 1, C['W']!);
@@ -386,66 +472,64 @@ function drawScleraEye(
     return;
   }
   if (kind === 'closed') {
-    px(ctx, cx - 3, cy + 1, 7, 1, C['o']!);
-    px(ctx, cx - 4, cy, 1, 1, C['o']!);
-    px(ctx, cx + 3, cy, 1, 1, C['o']!);
+    closedLid(ctx, cx, cy, spec.hw, C['o']!);
     return;
   }
   const wide = kind === 'wide';
-  const bigRx = rx + (wide ? 0.8 : 0);
-  const bigRy = ry + (wide ? 1 : 0);
+  const bigRx = spec.hw + (wide ? 0.6 : 0);
+  const bigRy = spec.hh + (wide ? 0.8 : 0);
   // dark ring then sclera
   fillEllipse(ctx, cx, cy, bigRx + 1, bigRy + 1, C['o']!);
   fillEllipse(ctx, cx, cy, bigRx, bigRy, C['V']!);
   if (kind === 'spiral') {
-    drawSpiral(ctx, cx, cy, C['e']!, t);
+    drawSpiral(ctx, cx, cy, C['h']!, t);
     return;
   }
   if (kind === 'dizzy') {
-    ctx.fillStyle = C['e']!;
-    for (let i = -2; i <= 2; i++) {
-      ctx.fillRect(Math.round(cx + i - 0.5), Math.round(cy + i - 0.5), 1, 1);
-      ctx.fillRect(Math.round(cx + i - 0.5), Math.round(cy - i - 0.5), 1, 1);
-    }
+    drawCross(ctx, cx, cy, C['h']!);
     return;
   }
-  let lx = lookX;
-  if (kind === 'side-eye') lx = lookX >= 0 ? 1 : -1;
-  const ix = Math.round(lx * (bigRx - 1.4));
-  const iy = Math.round(lookY * 1.2);
-  const irisR = wide ? 1.6 : 2;
-  fillEllipse(ctx, cx + ix, cy + iy, irisR, irisR + (kind === 'sparkle' ? 0.4 : 0), C['e']!);
-  px(ctx, cx + ix - 1, cy + iy - 1, 1, 1, C['k']!);
-  if (kind === 'sparkle') {
-    const sx = Math.round(cx + ix);
-    px(ctx, sx - 1, cy + iy - 2, 1, 4, C['W']!);
-    px(ctx, sx - 2, cy + iy - 1, 3, 1, C['W']!);
-  }
+  const [tx, ty] = eyeTravel(spec);
+  const ix = cx + sround(lookX * tx);
+  const iy = cy + sround(lookY * ty) + (kind === 'half' || kind === 'sleepy' ? 1 : 0);
+  const irisR = (spec.irisR ?? 2) - (wide ? 0.3 : 0);
+  // iris clipped to the sclera so the pupil can never leave the eye white
+  const inSclera = (x: number, y: number): boolean =>
+    ((x - cx) * (x - cx)) / (bigRx * bigRx) + ((y - cy) * (y - cy)) / (bigRy * bigRy) <= 1;
+  fillRotEllipse(ctx, ix, iy, irisR, irisR + (kind === 'sparkle' ? 0.3 : 0), 0, C['h']!, -Infinity, Infinity, inSclera);
+  // dark pupil (1px, 2x2 for big irises) + glint
+  const pr = irisR >= 2.4 ? 2 : 1;
+  const ppx = Math.round(ix - pr / 2);
+  const ppy = Math.round(iy - pr / 2);
+  for (let j = 0; j < pr; j++)
+    for (let i = 0; i < pr; i++) if (inSclera(ppx + i + 0.5, ppy + j + 0.5)) px(ctx, ppx + i, ppy + j, 1, 1, C['N']!);
+  if (inSclera(ppx - 0.5, ppy - 0.5)) px(ctx, ppx - 1, ppy - 1, 1, 1, C['k']!);
+  if (kind === 'sparkle' && inSclera(ix + 1, iy - 0.5)) px(ctx, Math.round(ix), Math.round(iy - 1), 1, 1, C['W']!);
   // eyelids (body-coloured) from the top; blink adds more
   const top = cy - bigRy - 1;
   const total = bigRy * 2 + 2;
   let lidFrac = 0;
   if (kind === 'open' || kind === 'side-eye') lidFrac = spec.baseLid / total;
   else if (kind === 'half') lidFrac = 0.5;
-  else if (kind === 'sleepy') lidFrac = 0.72;
+  else if (kind === 'sleepy') lidFrac = 0.66;
   else if (kind === 'squint') lidFrac = 0.4;
-  else if (kind === 'sparkle') lidFrac = spec.baseLid / total / 2;
+  else if (kind === 'sparkle' || kind === 'wide') lidFrac = spec.baseLid / total / 2;
   lidFrac = Math.min(1, lidFrac + (1 - open) * (1 - lidFrac));
   const lidRows = Math.round(lidFrac * total);
+  const lx0 = Math.round(cx - bigRx - 1);
+  const lw = Math.ceil(bigRx * 2 + 2);
   if (lidRows > 0) {
-    const bottom = top + lidRows;
+    const yTop = Math.round(top);
     ctx.fillStyle = C['b']!;
-    ctx.fillRect(Math.round(cx - bigRx - 1), Math.round(top), Math.ceil(bigRx * 2 + 2), lidRows);
-    px(ctx, cx - bigRx - 1, bottom, Math.ceil(bigRx * 2 + 2), 1, C['o']!); // crease
+    ctx.fillRect(lx0, yTop, lw, lidRows);
+    px(ctx, lx0, yTop + lidRows, lw, 1, C['o']!); // lid edge
   }
   if (kind === 'squint') {
     const bl = Math.round(total * 0.28);
     ctx.fillStyle = C['b']!;
-    ctx.fillRect(Math.round(cx - bigRx - 1), Math.round(top + total - bl), Math.ceil(bigRx * 2 + 2), bl);
-    px(ctx, cx - bigRx - 1, top + total - bl - 1, Math.ceil(bigRx * 2 + 2), 1, C['o']!);
+    ctx.fillRect(lx0, Math.round(top + total - bl), lw, bl);
+    px(ctx, lx0, top + total - bl - 1, lw, 1, C['o']!);
   }
-  void side;
-  void mood;
 }
 
 function drawBrows(
@@ -458,17 +542,19 @@ function drawBrows(
 ): void {
   if (kind === 'none') return;
   const y0 = Math.round(spec.cy + dy - spec.hh - spec.browDy);
+  const n = spec.browW ?? 4;
   ctx.fillStyle = colors[spec.browKey ?? 'o']!;
   for (const side of [-1, 1] as const) {
     const cx = Math.round((side < 0 ? spec.lx : spec.rx) + dx);
-    for (let k = 0; k < 4; k++) {
-      const i = side < 0 ? k : 3 - k; // 0 outer .. 3 inner
+    for (let k = 0; k < n; k++) {
+      const i = side < 0 ? k : n - 1 - k; // 0 outer .. n-1 inner
+      const f = i / (n - 1); // 0 outer .. 1 inner
       let y = y0;
-      if (kind === 'raised') y = y0 - 1 + (i === 0 || i === 3 ? 1 : 0);
-      else if (kind === 'furrowed') y = y0 + Math.floor(i * 0.6);
-      else if (kind === 'angry') y = y0 - 1 + i;
-      else if (kind === 'worried') y = y0 + 2 - i;
-      ctx.fillRect(cx - 2 + k, y, 1, kind === 'angry' ? 2 : 1);
+      if (kind === 'raised') y = y0 - 1 + (i === 0 || i === n - 1 ? 1 : 0);
+      else if (kind === 'furrowed') y = y0 + Math.floor(f * 1.9);
+      else if (kind === 'angry') y = y0 - 1 + Math.round(f * 3);
+      else if (kind === 'worried') y = y0 + 2 - Math.round(f * 3);
+      ctx.fillRect(cx - Math.floor(n / 2) + k, y, 1, kind === 'angry' ? 2 : 1);
     }
   }
 }
@@ -507,9 +593,10 @@ function drawExtras(
       ctx.fillStyle = C['W']!;
       ctx.globalAlpha = 0.85;
       for (const side of [-1, 1] as const) {
-        const x = 32 + side * 16 + (side > 0 ? -1 : -2) + dx;
-        ctx.fillRect(x, 12 + dy - k * 2, 3, 2);
-        ctx.fillRect(x + 1, 8 + dy - k * 2, 2, 2);
+        const x = 32 + side * f.steam[0] + (side > 0 ? -1 : -2) + dx;
+        const y = f.steam[1] + dy - k * 2;
+        ctx.fillRect(x, y, 3, 2);
+        ctx.fillRect(x + 1, y - 4, 2, 2);
       }
       ctx.globalAlpha = 1;
     }
@@ -533,8 +620,39 @@ export function createRigCharacter(def: RigDef, initial: Palette): Character {
     sctx.drawImage(c.canvas, c.ox + dx, c.oy + dy);
   };
 
+  const metrics = computeMetrics(def);
+
+  /** Destination rect of the 64x64 scratch box (squash/scale about the feet anchor, whole pixels). */
+  const blitRect = (st: PoseState): { dx0: number; dy0: number; dw: number; dh: number } => {
+    const pp = def.poses[st.pose];
+    const sxx = st.squashX * pp.sx * st.scale;
+    const syy = st.squashY * pp.sy * st.scale;
+    const dw = Math.max(1, Math.round(64 * sxx));
+    const dh = Math.max(1, Math.round(64 * syy));
+    const dx0 = Math.round(32 + st.offsetX - dw / 2);
+    const dy0 = Math.round(FEET_Y + st.offsetY - (FEET_Y / 64) * dh);
+    return { dx0, dy0, dw, dh };
+  };
+
   return {
     id: def.id,
+    metrics,
+    anchors(st: PoseState): CharAnchors {
+      const pp = def.poses[st.pose];
+      // offsets are applied by the stage, so anchors are computed without them
+      const r = blitRect({ ...st, offsetX: 0, offsetY: 0 });
+      const kx = r.dw / 64;
+      const ky = r.dh / 64;
+      const P = (x: number, y: number): Pt2 => ({ x: r.dx0 + x * kx, y: r.dy0 + y * ky });
+      const hdx = pp.headDx;
+      const hdy = pp.headDy;
+      return {
+        headTop: P(32, metrics.top + hdy).y,
+        head: P(32 + hdx, def.headCy + hdy),
+        eyes: [P(def.eye.lx + hdx, def.eye.cy + hdy), P(def.eye.rx + hdx, def.eye.cy + hdy)],
+        eyeR: Math.min(def.eye.hw, def.eye.hh) * Math.min(kx, ky),
+      };
+    },
     get palette() {
       return palette;
     },
@@ -589,7 +707,7 @@ export function createRigCharacter(def: RigDef, initial: Palette): Character {
       // face
       const eyeOpen = st.pose === 'sleep' ? 0 : st.eyes.open;
       const kind: EyeKind = st.pose === 'sleep' && ex.eyes !== 'dizzy' && ex.eyes !== 'spiral' ? 'closed' : ex.eyes;
-      drawEyes(sctx, def.eye, kind, eyeOpen, st.eyes.lookX, st.eyes.lookY, C, hdx, headDy, mouth, t);
+      drawEyes(sctx, def.eye, kind, eyeOpen, st.eyes.lookX, st.eyes.lookY, st.eyes.conv ?? 0, C, hdx, headDy, t);
       drawBrows(sctx, def.eye, ex.brows, C, hdx, headDy);
       blit(def.mouths[mouth], hdx, headDy);
       drawExtras(sctx, def, ex.extras, C, t, hdx, headDy);
@@ -600,8 +718,10 @@ export function createRigCharacter(def: RigDef, initial: Palette): Character {
       if (st.prop === 'note') blit(def.props.note, 0, bodyDy);
       if (st.prop === 'paper' || (!st.prop && st.paws === 'hold-paper')) {
         const p = st.propProgress ?? 0.5;
-        const len = 2 + Math.round(Math.min(1, Math.max(0, p)) * 5) * 2; // 2..12 rows: ends above the ground line
-        blit(paperSheet(len), 0, bodyDy);
+        const sh = def.sheet;
+        const maxLen = Math.max(2, FEET_Y - 2 - sh.y); // ends above the ground line
+        const len = 2 + Math.round((Math.min(1, Math.max(0, p)) * (maxLen - 2)) / 2) * 2;
+        blit(paperSheet(len, sh.x, sh.y, sh.w), 0, bodyDy);
         blit(def.props.roll, 0, bodyDy);
       }
 
@@ -618,17 +738,24 @@ export function createRigCharacter(def: RigDef, initial: Palette): Character {
 
       // blit with squash/scale about the feet anchor. Destination size and position snap to whole
       // pixels so every sprite pixel stays a uniform block after the stage's integer upscale.
-      const sxx = st.squashX * pp.sx * st.scale;
-      const syy = st.squashY * pp.sy * st.scale;
-      const dw = Math.max(1, Math.round(64 * sxx));
-      const dh = Math.max(1, Math.round(64 * syy));
-      const dx0 = Math.round(32 + st.offsetX - dw / 2);
-      const dy0 = Math.round(FEET_Y + st.offsetY - (FEET_Y / 64) * dh);
+      const { dx0, dy0, dw, dh } = blitRect(st);
       ctx.save();
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(scratch, dx0, dy0, dw, dh);
       ctx.restore();
     },
+  };
+}
+
+/** Static metrics from the parts: top-most pixel (head, hair, neutral ears) and peek depth. */
+export function computeMetrics(def: RigDef): CharMetrics {
+  const tops = [def.head.oy, def.ears.neutral.L.oy, def.ears.neutral.R.oy];
+  if (def.hair) tops.push(def.hair.oy);
+  const top = Math.min(...tops);
+  return {
+    top,
+    peekDepth: Math.round(def.eye.cy + def.eye.hh + 5 - top),
+    shadowW: def.shadowW,
   };
 }
 

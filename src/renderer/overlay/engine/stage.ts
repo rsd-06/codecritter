@@ -72,24 +72,53 @@ export class Stage {
     this.view.imageSmoothingEnabled = false;
   }
 
-  /** Where speech bubbles point (stage coords), follows hops and growth. */
+  private placement() {
+    const m = this.character.metrics;
+    return peekPlacement(this.pose.peekEdge, this.pose.peek, { top: m.top, depth: m.peekDepth });
+  }
+
+  /** Box (64x64 character-local) point -> stage point, honouring the peek placement/rotation. */
+  boxToStage(x: number, y: number): { x: number; y: number } {
+    if (this.pose.peek > 0) {
+      const pl = this.placement();
+      if (pl.rot === 0) return { x: BOX_X + x, y: BOX_Y + pl.y + y };
+      const c = Math.cos(pl.rot);
+      const s = Math.sin(pl.rot);
+      const lx = x - BOX / 2;
+      const ly = y - BOX / 2;
+      return { x: pl.x + lx * c - ly * s, y: pl.y + lx * s + ly * c };
+    }
+    return { x: BOX_X + x, y: BOX_Y + y };
+  }
+
+  /** Where speech bubbles point (stage coords): just above the character's head top. */
   get bubbleAnchor(): { x: number; y: number } {
     const p = this.pose;
     if (p.peek > 0) {
-      const pl = peekPlacement(p.peekEdge, p.peek);
+      const pl = this.placement();
       return { x: pl.headX, y: pl.headY };
     }
-    const top = BOX_Y + 62 - 58 * p.scale * p.squashY + p.offsetY;
-    return { x: BOX_X + BOX / 2 + p.offsetX, y: Math.max(26, Math.round(top) - 1) };
+    const a = this.character.anchors(p);
+    const top = BOX_Y + a.headTop + p.offsetY;
+    return { x: Math.round(BOX_X + a.head.x + p.offsetX), y: Math.max(26, Math.round(top) - 1) };
   }
 
   /** Head centre in stage coords (particles spawn relative to this). */
   get head(): { x: number; y: number } {
-    if (this.pose.peek > 0) {
-      const pl = peekPlacement(this.pose.peekEdge, this.pose.peek);
-      return { x: pl.headX, y: pl.headY + 8 };
-    }
-    return { x: BOX_X + BOX / 2 + this.pose.offsetX, y: BOX_Y + 28 + this.pose.offsetY };
+    const a = this.character.anchors(this.pose);
+    if (this.pose.peek > 0) return this.boxToStage(a.head.x, a.head.y);
+    return { x: BOX_X + a.head.x + this.pose.offsetX, y: BOX_Y + a.head.y + this.pose.offsetY };
+  }
+
+  /** Eye centres in stage coords + eye radius + layer rotation (for cursor tracking). */
+  get eyes(): { l: { x: number; y: number }; r: { x: number; y: number }; radius: number; rot: number } {
+    const a = this.character.anchors(this.pose);
+    const peek = this.pose.peek > 0;
+    const off = (q: { x: number; y: number }) =>
+      peek
+        ? this.boxToStage(q.x, q.y)
+        : { x: BOX_X + q.x + this.pose.offsetX, y: BOX_Y + q.y + this.pose.offsetY };
+    return { l: off(a.eyes[0]), r: off(a.eyes[1]), radius: a.eyeR, rot: peek ? this.placement().rot : 0 };
   }
 
   render(t: number): void {
@@ -99,7 +128,7 @@ export class Stage {
     // ground shadow (shrinks while airborne)
     const air = Math.max(0, -this.pose.offsetY);
     const peeking = this.pose.peek > 0.05; // at the screen edge: no ground shadow
-    const sw = Math.max(8, Math.round(18 * this.pose.scale - air * 0.4));
+    const sw = Math.max(6, Math.round(this.character.metrics.shadowW * this.pose.scale - air * 0.4));
     if (!peeking) {
       b.fillStyle = 'rgba(0,0,0,0.22)';
       b.fillRect(BOX_X + 32 - sw + this.pose.offsetX * 0.3, STAGE_H - 3, sw * 2, 2);
@@ -111,7 +140,7 @@ export class Stage {
     l.clearRect(0, 0, STAGE_W, STAGE_H);
     l.save();
     if (this.pose.peek > 0) {
-      const pl = peekPlacement(this.pose.peekEdge, this.pose.peek);
+      const pl = this.placement();
       if (pl.rot === 0) l.translate(BOX_X, BOX_Y + pl.y);
       else {
         l.translate(pl.x, pl.y);
@@ -125,9 +154,16 @@ export class Stage {
 
     this.particles.draw(b);
     if (this.note) drawNote(b, this.note, STAGE_W - NOTE_W - 3, 4, this.bubble.active ? 0.35 : 1);
-    if (this.pomodoro) drawPomodoro(b, this.pomodoro, STAGE_W - 31, STAGE_H - 52);
+    if (this.pomodoro) {
+      // beside the face, following the head top (fixed spot while peeking)
+      const py =
+        this.pose.peek > 0
+          ? STAGE_H - 52
+          : Math.min(STAGE_H - 18, Math.max(18, Math.round(BOX_Y + this.character.anchors(this.pose).headTop) + 8));
+      drawPomodoro(b, this.pomodoro, STAGE_W - 31, py);
+    }
     const a = this.bubbleAnchor;
-    const band = this.pose.peek > 0 ? peekPlacement(this.pose.peekEdge, this.pose.peek) : null;
+    const band = this.pose.peek > 0 ? this.placement() : null;
     this.bubble.draw(b, a.x, a.y, band ? band.maxX + 1 : STAGE_W, band ? band.minX : 1);
 
     this.view.imageSmoothingEnabled = false;

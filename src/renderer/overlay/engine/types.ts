@@ -73,9 +73,41 @@ export interface Expression {
 export interface EyeState {
   /** blink multiplier 0 (closed) .. 1 (fully open) */
   open: number;
-  /** pupil offset -1..1 */
+  /** pupil offset -1..1 (mean of both eyes, character-local frame) */
   lookX: number;
   lookY: number;
+  /**
+   * Convergence -1..1: the left eye uses lookX + conv, the right eye lookX - conv (positive =
+   * cross-eyed towards a point between the eyes). Optional; 0 when absent.
+   */
+  conv?: number;
+}
+
+export interface Pt2 {
+  x: number;
+  y: number;
+}
+
+/** Where the face is, for a given pose (64x64 box coords, after pose/squash/scale). */
+export interface CharAnchors {
+  /** topmost pixel of the head incl. ears/hair (bubbles point here) */
+  headTop: number;
+  /** head centre (particles, petting) */
+  head: Pt2;
+  /** eye centres, left then right */
+  eyes: [Pt2, Pt2];
+  /** eye radius (min half size) in box px */
+  eyeR: number;
+}
+
+/** Static geometry of a character at the neutral sit pose (box coords). */
+export interface CharMetrics {
+  /** topmost pixel incl. ears/hair */
+  top: number;
+  /** pixels from `top` that must stay visible while peeking (down to below the eyes) */
+  peekDepth: number;
+  /** half width of the ground shadow */
+  shadowW: number;
 }
 
 export interface PoseState {
@@ -110,6 +142,9 @@ export interface Character {
    * Feet anchor is at (32, 62); squash/scale/offset pivot about it.
    */
   draw(ctx: CanvasRenderingContext2D, pose: PoseState, t: number): void;
+  readonly metrics: CharMetrics;
+  /** Face anchors for this pose (box coords). */
+  anchors(pose: PoseState): CharAnchors;
 }
 
 export function defaultPoseState(): PoseState {
@@ -117,7 +152,7 @@ export function defaultPoseState(): PoseState {
     pose: 'sit',
     expression: 'neutral',
     paws: 'down',
-    eyes: { open: 1, lookX: 0, lookY: 0 },
+    eyes: { open: 1, lookX: 0, lookY: 0, conv: 0 },
     squashX: 1,
     squashY: 1,
     offsetX: 0,

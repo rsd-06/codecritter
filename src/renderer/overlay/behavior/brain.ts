@@ -30,6 +30,7 @@ import {
 import { formatMMSS, type PomodoroView } from '../engine/widgets';
 import { AgentTracker } from './agents';
 import { PettingDetector, ShakeDetector } from './detectors';
+import { computeLook, type LookGeom } from './look';
 import { pick, truncate } from './strings';
 import { BORED_AFTER_MS, STATE_ORDER, PENDING_TTL_S, createStates, type BState, type StateId } from './states';
 
@@ -48,6 +49,8 @@ const STALE_KPS_S = 2.5;
 export interface Sinks {
   pose: PoseState;
   head(): { x: number; y: number };
+  /** eye centres + radius + layer rotation in stage coords (Stage.eyes); optional for tests */
+  eyes?(): LookGeom;
   bubble: {
     show(kind: BubbleKind, text: string, ttlMs: number): void;
     update(dt: number): void;
@@ -121,7 +124,8 @@ const resetIntent = (i: Intent): void => {
 
 /** min(d, until - t) when `until` is in the future */
 const soonest = (d: number, t: number, until: number): number => (until > t ? Math.min(d, until - t) : d);
-const q = (v: number, step: number): number => Math.round(v / step) * step;
+// symmetric rounding: Math.round(-0.5) = -0 would make leftward looks lag rightward ones
+const q = (v: number, step: number): number => (Math.sign(v) * Math.round(Math.abs(v) / step) * step) || 0;
 const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
 
 export interface DebugSnapshot {
@@ -189,6 +193,7 @@ export class Brain {
   private cursorSpeed = 0;
   private lookTx = 0;
   private lookTy = 0;
+  private lookTc = 0;
   private glanceIn = 6;
   private glanceFor = 0;
   private pxPerLogical = 2;
@@ -224,8 +229,10 @@ export class Brain {
   readonly lean = new Spring(0, 200, 12);
   readonly growSpring = new Spring(1, 120, 12);
   readonly peekSpring = new Spring(0, 110, 18);
-  private readonly lookX = new Spring(0, 420, 36);
-  private readonly lookY = new Spring(0, 420, 36);
+  // critically damped (c = 2*sqrt(k)), time constant ~25 ms: no visible lag at 12 fps
+  private readonly lookX = new Spring(0, 1600, 80);
+  private readonly lookY = new Spring(0, 1600, 80);
+  private readonly lookC = new Spring(0, 1600, 80);
   private wasCurious = false;
   private hopT = -1;
   private hopCount = 0;
@@ -304,7 +311,7 @@ export class Brain {
     this.character = s.character;
     this.sinks.setNote(s.pinnedNote);
     if (!s.reactions.eyeFollow) {
-      this.lookTx = this.lookTy = 0;
+      this.lookTx = this.lookTy = this.lookTc = 0;
       this.pushLook();
     }
     this.wakeFn();
@@ -342,13 +349,24 @@ export class Brain {
     // eye follow
     const prevQx = q(this.lookTx, 0.25);
     const prevQy = q(this.lookTy, 0.25);
+    const prevQc = q(this.lookTc, 0.25);
     if (this.settings.reactions.eyeFollow) {
-      this.lookTx = Math.tanh(dx / (55 * ppl));
-      this.lookTy = Math.tanh(dy / (55 * ppl));
+      // per-eye direction from each eye's real screen position (not the window/head centre)
+      const geom: LookGeom = this.sinks.eyes?.() ?? {
+        l: { x: head.x - 5, y: head.y },
+        r: { x: head.x + 5, y: head.y },
+        radius: 4,
+        rot: 0,
+      };
+      const look = computeLook(c, geom);
+      this.lookTx = look.x;
+      this.lookTy = look.y;
+      this.lookTc = look.conv;
     } else {
-      this.lookTx = this.lookTy = 0;
+      this.lookTx = this.lookTy = this.lookTc = 0;
     }
-    const lookChanged = q(this.lookTx, 0.25) !== prevQx || q(this.lookTy, 0.25) !== prevQy;
+    const lookChanged =
+      q(this.lookTx, 0.25) !== prevQx || q(this.lookTy, 0.25) !== prevQy || q(this.lookTc, 0.25) !== prevQc;
     this.glanceFor = 0;
     this.pushLook();
     const prevPurr = this.purrUntil;
@@ -384,6 +402,7 @@ export class Brain {
   private pushLook(): void {
     this.lookX.target = this.lookTx;
     this.lookY.target = this.lookTy;
+    this.lookC.target = this.lookTc;
   }
 
   /** Cursor close to the character and moving: "curious". */
@@ -667,17 +686,20 @@ export class Brain {
       if (this.glanceFor > 0) {
         this.glanceFor -= dt;
         if (this.glanceFor <= 0) {
-          this.lookTx = this.lookTy = 0;
+          this.lookTx = this.lookTy = this.lookTc = 0;
           this.pushLook();
           this.lookX.snap(0);
           this.lookY.snap(0);
+          this.lookC.snap(0);
         }
       } else if (this.glanceIn <= 0) {
         this.glanceIn = (5 + this.rng() * 7) * i.glance;
         this.glanceFor = 0.9;
         this.lookTx = (this.rng() < 0.5 ? -1 : 1) * (0.5 + this.rng() * 0.5);
         this.lookTy = (this.rng() - 0.5) * 0.6;
+        this.lookTc = 0;
         this.pushLook();
+        this.lookC.snap(0);
         this.lookX.snap(this.lookTx); // saccade: one redraw, not a spring glide
         this.lookY.snap(this.lookTy);
       }
@@ -716,6 +738,7 @@ export class Brain {
     this.peekSpring.step(dt);
     this.lookX.step(dt);
     this.lookY.step(dt);
+    this.lookC.step(dt);
     this.sqx.target = this.sqy.target = 1;
 
     // purr loop must stop whenever we are not purring
@@ -743,6 +766,7 @@ export class Brain {
     sp.eyes.open = this.blender.eyeOpen;
     sp.eyes.lookX = q(this.lookX.value, 0.25);
     sp.eyes.lookY = q(this.lookY.value, 0.25);
+    sp.eyes.conv = q(this.lookC.value, 0.25);
     sp.squashX = q(this.sqx.value, 1 / 32);
     sp.squashY = q(this.sqy.value, 1 / 32);
     sp.scale = q(this.growSpring.value, 1 / 32);
@@ -806,6 +830,7 @@ export class Brain {
       !this.peekSpring.settled ||
       q(this.lookX.value, 0.25) !== q(this.lookX.target, 0.25) ||
       q(this.lookY.value, 0.25) !== q(this.lookY.target, 0.25) ||
+      q(this.lookC.value, 0.25) !== q(this.lookC.target, 0.25) ||
       this.heat > 0.3 ||
       this.state.animates(this)
     );

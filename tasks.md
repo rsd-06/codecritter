@@ -94,3 +94,11 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [ ] Launch video via brag skill; embedded on site + README
 - [ ] Open-source hygiene: issue/PR templates, CODE_OF_CONDUCT, good-first-issue labels, Discussions on
 - [ ] Launch kit for X / Threads / Instagram (rsd.exe): post drafts, thread, reel script + captions, posting schedule; Show HN / Reddit / Product Hunt drafts (user posts)
+
+## Art & eye-tracking pass [art agent] - owns overlay/characters, overlay/engine, playground, tools media
+- [x] Stitch likeness: wide high ears (notch on left ear, navy interior + pink inner), glossy tilted oval eyes with one highlight in darker patches, big navy nose, very wide mouths, crown marking + stripes, chest patch, stubby arms with dark claws
+- [x] Yoda likeness: long horizontal drooping ears with pink inner, wide bald head + wisps, heavy brow + wrinkles, half-lidded green-brown irises with dark pupils, thin wide mouth, cream tunic under brown cloak + sash, three-fingered hands, gnarled gimer stick
+- [x] ~20% smaller on screen via native redraw (integer scaling kept; stage/window constants unchanged)
+- [x] Bubbles / pomodoro / particles / peek anchored to character metrics + anchors (head top, eyes)
+- [x] Eye tracking: per-eye mapping from real eye screen positions (behavior/look.ts + tests), convergence, symmetric rounding, critically damped smoothing, peek rotation, irises clipped to eye whites
+- [x] Regenerated sprites, icons, tray, README media

@@ -240,6 +240,21 @@ function exportCharacter(id: CharacterId): void {
   const props: PropName[] = ['cup', 'paper', 'laptop', 'cane', 'note'];
   for (const p of props) emit(id, 'prop', p, pose({ prop: p, propProgress: 0.6, expression: 'focused' }));
 
+  // eye tracking: pupils at the travel extremes + convergence, for every open-eye kind (QA sheet)
+  const looks: Array<[string, number, number, number]> = [
+    ['c', 0, 0, 0],
+    ['l', -1, 0, 0],
+    ['r', 1, 0, 0],
+    ['u', 0, -1, 0],
+    ['d', 0, 1, 0],
+    ['ul', -0.75, -0.75, 0],
+    ['dr', 0.75, 0.75, 0],
+    ['x', 0, 0, 1],
+  ];
+  for (const ex of ['neutral', 'surprised', 'focused', 'sleepy', 'sneaky', 'excited'] as const)
+    for (const [n, x, y, conv] of looks)
+      emit(id, 'look', `${ex}_${n}`, pose({ expression: ex, eyes: { open: 1, lookX: x, lookY: y, conv } }));
+
   // idle: breathing, a blink and a glance (ms per frame)
   const idle: Array<[Partial<PoseState>, number, number]> = [
     [{}, 0, 900],

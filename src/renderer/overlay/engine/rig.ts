@@ -34,6 +34,8 @@ export const FIXED_COLORS: Record<string, string> = {
   g: '#59606e', // dark grey
   H: '#f2efe6', // hair white
   L: '#7fe3a8', // laptop glow
+  F: '#e9dbb4', // cream cloth (inner robe)
+  f: '#c7b183', // cream cloth shade
 };
 
 export type ColorMap = Record<string, string>;
@@ -92,6 +94,9 @@ export function paletteColors(p: Palette): ColorMap {
     q: mix(p.earInner, '#000000', 0.3), // ear inner shade
     A: mix(p.accent, '#ffffff', 0.3), // accent light
     z: mix(p.accent, '#000000', 0.35), // accent dark
+    h: mix(p.eye, '#8f8a34', 0.62), // iris (eye colour pulled towards green-brown)
+    i: mix(p.earInner, '#e98f9c', 0.55), // pink inner (ears)
+    n: mix(p.outline, p.bodyShade, 0.22), // nose / deep interior
   };
 }
 

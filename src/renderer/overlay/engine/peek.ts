@@ -7,12 +7,19 @@ import { BOX_Y, STAGE_H, STAGE_W } from './types';
 
 export type PeekEdgeName = 'left' | 'right' | 'bottom';
 
-/** Head pixels (along the peek axis) that show beyond the screen edge. */
+/** Default head pixels (along the peek axis) that show beyond the screen edge. */
 export const PEEK_HEAD_PX = 28;
 /** Extra travel (logical px) from "fully hidden" to the peeking position. */
 export const PEEK_TRAVEL = 48;
-/** Character box centre (local 32,32) height in the stage; head top is local y=4. */
+/** Character box centre (local 32,32) height in the stage. */
 const BOX_CY = BOX_Y + 32;
+
+/** Per-character peek geometry: head top (box y) and how many px from it must show. */
+export interface PeekMetrics {
+  top: number;
+  depth: number;
+}
+const DEFAULT_METRICS: PeekMetrics = { top: 4, depth: PEEK_HEAD_PX };
 
 export interface PeekPlacement {
   /** Rotation of the character layer around the box centre, radians. */
@@ -29,13 +36,15 @@ export interface PeekPlacement {
 }
 
 /** p: 0 = hidden past the edge, 1 = fully peeking. */
-export function peekPlacement(edge: PeekEdgeName, p: number): PeekPlacement {
+export function peekPlacement(edge: PeekEdgeName, p: number, m: PeekMetrics = DEFAULT_METRICS): PeekPlacement {
   const f = PEEK_VISIBLE_FRACTION;
-  const hide = Math.round((1 - Math.min(1, Math.max(0, p))) * PEEK_TRAVEL);
+  const travel = Math.max(PEEK_TRAVEL, m.depth + 20);
+  const hide = Math.round((1 - Math.min(1, Math.max(0, p))) * travel);
+  const reach = 32 - m.top; // box centre -> head top
   if (edge === 'bottom') {
     const lineY = Math.round(STAGE_H * f);
-    const y = lineY - PEEK_HEAD_PX - (BOX_Y + 4) + hide; // box-origin dy
-    const headTop = BOX_Y + 4 + y;
+    const y = lineY - m.depth - (BOX_Y + m.top) + hide; // box-origin dy
+    const headTop = BOX_Y + m.top + y;
     return {
       rot: 0,
       x: 0,
@@ -49,24 +58,24 @@ export function peekPlacement(edge: PeekEdgeName, p: number): PeekPlacement {
   if (edge === 'right') {
     // head points left (CCW 90deg); screen edge is the band's right side
     const lineX = Math.round(STAGE_W * f);
-    const cx = lineX - PEEK_HEAD_PX + 28 + hide;
+    const cx = lineX - m.depth + reach + hide;
     return {
       rot: -Math.PI / 2,
       x: cx,
       y: BOX_CY,
-      headX: cx - 28 + 10,
+      headX: cx - reach + 10,
       headY: BOX_CY - 28,
       minX: 1,
       maxX: lineX - 1,
     };
   }
   const lineX = Math.round(STAGE_W * (1 - f));
-  const cx = lineX + PEEK_HEAD_PX - 28 - hide;
+  const cx = lineX + m.depth - reach - hide;
   return {
     rot: Math.PI / 2,
     x: cx,
     y: BOX_CY,
-    headX: cx + 28 - 10,
+    headX: cx + reach - 10,
     headY: BOX_CY - 28,
     minX: lineX + 1,
     maxX: STAGE_W - 1,
