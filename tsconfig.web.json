@@ -12,5 +12,6 @@
     "noEmit": true,
     "paths": { "@shared/*": ["./src/shared/*"] }
   },
-  "include": ["src/renderer/**/*", "src/shared/**/*"]
+  "include": ["src/renderer/**/*", "src/shared/**/*"],
+  "exclude": ["src/shared/defaultsJson.test.ts"]
 }

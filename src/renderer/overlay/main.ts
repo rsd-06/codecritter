@@ -79,7 +79,7 @@ export function startOverlay(
   // Tauri: set_ignore_cursor_events(true) swallows pointer moves, so hover is derived from
   // CursorSample (physical screen px + overlay bounds) instead of DOM events. DOM events still
   // work while the window is interactive (drag, right-click, petting).
-  const tauriHitTest = isTauriRuntime() && !window.critter;
+  const tauriHitTest = isTauriRuntime();
   const hitTestFromCursor = (c: CursorSample): void => {
     if (dragging || c.winW <= 0 || c.winH <= 0) return;
     const cx = ((c.x - c.winX) * window.innerWidth) / c.winW;
@@ -159,6 +159,6 @@ export function startOverlay(
 }
 
 // Only auto-start inside the real overlay window (the playground calls startOverlay itself).
-if (typeof window !== 'undefined' && (window.critter || isTauriRuntime())) {
-  startOverlay(window.critter ?? getBridge());
+if (typeof window !== 'undefined' && isTauriRuntime()) {
+  startOverlay(getBridge());
 }

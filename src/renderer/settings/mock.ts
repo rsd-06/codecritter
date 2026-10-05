@@ -1,4 +1,4 @@
-// In-memory SettingsBridge used when window.critterSettings is absent (browser playground).
+// In-memory SettingsBridge used outside Tauri (browser playground).
 import { DEFAULT_SETTINGS } from '@shared/defaults';
 import type { AgentId, PomodoroState, Settings, SettingsBridge } from '@shared/types';
 import { AGENTS } from './helpers';

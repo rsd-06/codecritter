@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "CodeCritter",
   "version": "0.2.0",
-  "identifier": "com.codecritter.app",
+  "identifier": "dev.codecritter.app",
   "build": {
     "beforeDevCommand": "npm run gen:defaults && vite --config vite.tauri.config.ts",
     "beforeBuildCommand": "npm run gen:defaults && vite build --config vite.tauri.config.ts",
@@ -21,6 +21,44 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": ["icons/icon.png", "icons/icon.ico", "icons/icon.icns"]
+    "publisher": "rsd-06",
+    "copyright": "Copyright (c) rsd-06. MIT License.",
+    "category": "DeveloperTool",
+    "shortDescription": "Pixel desktop companion for developers",
+    "longDescription": "Open-source pixel desktop companion (Stitch & Yoda) that reacts to your typing, your coding agents and your breaks.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../bin/critter-hook.mjs": "bin/critter-hook.mjs"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "startMenuFolder": "CodeCritter",
+        "displayLanguageSelector": false,
+        "compression": "lzma"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "infoPlist": "Info.plist"
+    },
+    "linux": {
+      "deb": {
+        "section": "utils"
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    }
   }
 }

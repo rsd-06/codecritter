@@ -33,7 +33,7 @@ const MAX_BODY: usize = 16 * 1024;
 const MAX_MESSAGE: usize = 200;
 const PORT_TRIES: u16 = 6; // requested port + next 5
 const RATE_PER_SEC: f64 = 30.0;
-const SERVER_VERSION: &str = "0.1.0";
+const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Matches `AgentEvent` in `src/shared/types.ts` (camelCase JSON).
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

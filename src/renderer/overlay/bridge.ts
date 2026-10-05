@@ -1,4 +1,4 @@
-// Real bridge (window.critter from the preload) or a MockBridge for the browser playground.
+// Real bridge (Tauri) or a MockBridge for the browser playground.
 import { DEFAULT_SETTINGS } from '@shared/defaults';
 import type {
   AgentEvent,
@@ -22,7 +22,7 @@ export interface MockLog {
   contextMenu: number;
 }
 
-/** EventTarget-based fake of the preload bridge with emit helpers for the playground / tests. */
+/** EventTarget-based fake of the Tauri bridge with emit helpers for the playground / tests. */
 export class MockBridge implements OverlayBridge {
   private bus = new EventTarget();
   settings: Settings = structuredClone(DEFAULT_SETTINGS);
@@ -125,7 +125,6 @@ export type AnyBridge = OverlayBridge & { mock?: MockBridge };
 
 export function getBridge(): AnyBridge {
   if (isTauriRuntime()) return new TauriBridge();
-  if (typeof window !== 'undefined' && window.critter) return window.critter;
   const m = new MockBridge();
   return Object.assign(m, { mock: m });
 }

@@ -1,6 +1,6 @@
 // Peek placement: where/how the character is drawn so its head peeks in from a screen edge.
 // main slides the overlay window so only PEEK_VISIBLE_FRACTION of the stage stays on screen
-// (src/main/peek/geometry.ts); everything beyond that band is off-screen, so the body can
+// (src-tauri/src/peek.rs); everything beyond that band is off-screen, so the body can
 // simply be drawn past the band edge.
 import { PEEK_VISIBLE_FRACTION } from '@shared/constants';
 import { BOX_Y, STAGE_H, STAGE_W } from './types';

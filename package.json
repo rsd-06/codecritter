@@ -1,11 +1,11 @@
 {
   "name": "codecritter",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open-source pixel desktop companion (Stitch & Yoda) that reacts to your typing, your coding agents and your breaks",
   "keywords": [
     "desktop-pet",
     "pixel-art",
-    "electron",
+    "tauri",
     "companion",
     "pomodoro",
     "claude-code",
@@ -25,37 +25,28 @@
   "author": "rsd-06",
   "license": "MIT",
   "private": true,
-  "main": "out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "dev": "tauri dev",
+    "build": "npm run gen:defaults && vite build --config vite.tauri.config.ts",
+    "dist": "tauri build",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
     "lint": "eslint .",
     "format": "prettier --write .",
     "playground": "vite --config vite.playground.config.ts",
-    "dist": "electron-vite build && electron-builder",
-    "sprites:export": "esbuild tools/sprite-export.ts --bundle --platform=node --format=esm --alias:@shared=./src/shared --outfile=tools/out/.sprite-export.mjs --log-level=warning && node tools/out/.sprite-export.mjs",
-    "tauri": "tauri",
     "gen:defaults": "node tools/gen-defaults.mjs",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
-    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml"
+    "sprites:export": "esbuild tools/sprite-export.ts --bundle --platform=node --format=esm --alias:@shared=./src/shared --outfile=tools/out/.sprite-export.mjs --log-level=warning && node tools/out/.sprite-export.mjs",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.1",
     "@tauri-apps/plugin-autostart": "^2.7.0",
     "@tauri-apps/plugin-dialog": "^2.8.1",
     "@tauri-apps/plugin-global-shortcut": "^2.4.0",
-    "electron-store": "^8.2.0",
-    "koffi": "^3.3.2",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "uiohook-napi": "^1.5.5"
-  },
-  "optionalDependencies": {
-    "get-windows": "^9.3.0"
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -64,9 +55,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^5.2.0",
-    "electron": "^44.5.1",
-    "electron-builder": "^26.15.3",
-    "electron-vite": "^5.0.0",
+    "esbuild": "^0.28.2",
     "eslint": "^10.12.0",
     "prettier": "^3.9.9",
     "typescript": "^6.0.3",

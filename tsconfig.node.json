@@ -13,11 +13,9 @@
     "paths": { "@shared/*": ["./src/shared/*"] }
   },
   "include": [
-    "src/main/**/*",
-    "src/preload/**/*",
     "src/shared/**/*",
     "bin/**/*",
-    "electron.vite.config.ts",
+    "vite.tauri.config.ts",
     "vite.playground.config.ts",
     "vitest.config.ts"
   ]

@@ -27,6 +27,13 @@ pub const STAGE_H: f64 = 112.0;
 #[cfg(windows)]
 const WEBVIEW2_ARGS: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,CalculateNativeWinOcclusion,Translate,MediaRouter,OptimizationHints,msEdgeShopping,msWebAssist,msEdgeRewards,AutofillServerCommunication,BackForwardCache,NetworkServiceSandbox,AudioServiceOutOfProcess --disable-gpu --in-process-gpu --disable-background-networking --disable-component-update --disable-breakpad --disable-site-isolation-trials --renderer-process-limit=1 --enable-low-end-device-mode --disable-extensions --no-pings --js-flags=--max-old-space-size=64,--lite-mode";
 
+/// Fixed WebView2 profile folder (`%LOCALAPPDATA%\<identifier>\webview`), shared by both windows.
+/// Without it WebView2 would create `<exe>.WebView2` next to the executable (inside the install dir).
+#[cfg(windows)]
+fn webview_data_dir(app: &AppHandle) -> Option<std::path::PathBuf> {
+    app.path().app_local_data_dir().ok().map(|d| d.join("webview"))
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Rect {
     pub x: i32,
@@ -154,6 +161,9 @@ pub fn create_overlay(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     #[cfg(windows)]
     {
         b = b.additional_browser_args(WEBVIEW2_ARGS);
+        if let Some(d) = webview_data_dir(app) {
+            b = b.data_directory(d);
+        }
     }
     let win = b.build()?;
     if let Some(r) = rect {
@@ -344,7 +354,13 @@ pub fn open_settings(app: &AppHandle) {
         .center()
         .visible(true);
     #[cfg(windows)]
-    let b = b.additional_browser_args(WEBVIEW2_ARGS);
+    let b = {
+        let b = b.additional_browser_args(WEBVIEW2_ARGS);
+        match webview_data_dir(app) {
+            Some(d) => b.data_directory(d),
+            None => b,
+        }
+    };
     let built = b.build();
     match built {
         Ok(w) => {

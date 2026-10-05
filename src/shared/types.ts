@@ -109,7 +109,7 @@ export interface PomodoroState {
   remainingMs: number;
 }
 
-// window.critter (overlay preload)
+// Overlay bridge (TauriBridge / MockBridge)
 export interface OverlayBridge {
   onInput(cb: (s: InputSample) => void): () => void;
   onCursor(cb: (s: CursorSample) => void): () => void;
@@ -126,7 +126,7 @@ export interface OverlayBridge {
   openSettings(): void;
   showContextMenu(): void;
 }
-// window.critterSettings (settings preload)
+// Settings bridge (TauriBridge / mock)
 export interface SettingsBridge {
   get(): Promise<Settings>;
   set(patch: Partial<Settings>): Promise<Settings>;
