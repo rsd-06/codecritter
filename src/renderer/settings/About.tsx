@@ -1,7 +1,9 @@
 import { memo } from 'react';
 import { Section } from './ui';
 
-export const VERSION = '0.1.0';
+// Injected from package.json by vite.tauri.config.ts (`define`); the fallback is for the playground/tests.
+declare const __APP_VERSION__: string | undefined;
+export const VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.2.0';
 export const REPO_URL = 'https://github.com/rsd-06/codecritter';
 
 export const AboutTab = memo(function AboutTab() {

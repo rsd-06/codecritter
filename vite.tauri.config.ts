@@ -1,6 +1,9 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'node:fs';
+
+const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8')) as { version: string };
 
 // Frontend build for the Tauri shell (overlay + settings pages, multi-page).
 export default defineConfig({
@@ -8,6 +11,7 @@ export default defineConfig({
   base: './',
   clearScreen: false,
   plugins: [react()],
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   resolve: {
     alias: { '@shared': resolve(__dirname, 'src/shared') },
     dedupe: ['react', 'react-dom'],
