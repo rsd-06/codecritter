@@ -1,0 +1,43 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open Settings\n2. ..."
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: CodeCritter version
+      description: Shown in Settings → About
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: ["Windows 11", "Windows 10", "macOS", "Linux", "Other"]
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: AI agent (if relevant)
+      placeholder: "Claude Code, Cursor, Codex, ..."
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Run the app with CRITTER_DEBUG=1 for extra logs. Please remove anything private.

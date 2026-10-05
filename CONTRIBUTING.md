@@ -2,6 +2,13 @@
 
 Thanks for helping! This is a small, friendly project. Bug reports, new characters, agent integrations and docs fixes are all welcome.
 
+## Finding something to work on
+
+- Look for issues labelled [`good first issue`](https://github.com/rsd-06/codecritter/labels/good%20first%20issue) or [`help wanted`](https://github.com/rsd-06/codecritter/labels/help%20wanted).
+- Ideas and questions go in [Discussions](https://github.com/rsd-06/codecritter/discussions).
+- Comment on an issue before starting so nobody duplicates work.
+- Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Dev setup
 
 Requirements: Node 22+, npm, Git, and a stable Rust toolchain ([rustup](https://rustup.rs)) plus the [Tauri platform prerequisites](https://tauri.app/start/prerequisites/) (MSVC Build Tools + WebView2 on Windows, Xcode CLT on macOS, `libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev libxtst-dev` on Debian/Ubuntu). Python 3.10+ is only needed to regenerate image assets.
