@@ -32,6 +32,7 @@ pub fn start(app: AppHandle) {
                 // Cursor-only fallback: derive mouse speed from polled positions.
                 if let Ok(c) = app.cursor_position() {
                     if last_cursor != Some((c.x, c.y)) {
+                        crate::scheduler::note_input_activity();
                         a.mouse_move(c.x, c.y, now);
                         last_cursor = Some((c.x, c.y));
                     }

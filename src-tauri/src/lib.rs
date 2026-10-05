@@ -1,5 +1,7 @@
 //! CodeCritter Tauri shell. `run()` owns the module wiring; T2 agents fill module bodies only.
 
+use tauri::Manager;
+
 mod autostart;
 mod commands;
 mod state;
@@ -7,6 +9,8 @@ mod store;
 mod tray;
 mod winmgr;
 mod shortcuts;
+#[cfg(debug_assertions)]
+mod selftest;
 
 pub mod agents;
 pub mod cursor;
@@ -35,6 +39,13 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(state::AppState::default())
+        .on_window_event(|window, event| {
+            if window.label() == winmgr::OVERLAY {
+                if let tauri::WindowEvent::ScaleFactorChanged { .. } = event {
+                    winmgr::reclamp_overlay(window.app_handle());
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
             commands::set_settings,
@@ -66,6 +77,9 @@ pub fn run() {
             tray::create(&handle)?;
             shortcuts::register(&handle);
             autostart::init(&handle);
+            winmgr::watch_displays(handle.clone());
+            #[cfg(debug_assertions)]
+            selftest::maybe_start(handle.clone());
 
             input::start(handle.clone());
             cursor::start(handle.clone());

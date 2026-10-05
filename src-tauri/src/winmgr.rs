@@ -184,6 +184,65 @@ pub fn apply_scale(app: &AppHandle, scale: i64) {
     persist_position(app);
 }
 
+/* ---- display changes ---- */
+
+/// Re-fit the overlay after a monitor was removed / moved / changed DPI: the window is clamped into
+/// the work area of the monitor under its centre (or the primary monitor when that one is gone), and
+/// resized for the new scale factor. Skipped while peeking (the off-screen peek position is intended).
+pub fn reclamp_overlay(app: &AppHandle) {
+    if locked(app) || app.state::<AppState>().drag.lock().is_some() {
+        return;
+    }
+    let Some(w) = overlay(app) else { return };
+    let Some(r) = win_rect(&w) else { return };
+    let Some(m) = monitor_at(app, (r.x + r.w / 2) as f64, (r.y + r.h / 2) as f64) else { return };
+    let (lw, lh) = overlay_logical(store::scale(app));
+    let (nw, nh) = physical((lw, lh), m.scale_factor());
+    let target = clamp_rect(Rect { x: r.x, y: r.y, w: nw, h: nh }, work_rect(&m));
+    if (nw, nh) != (r.w, r.h) {
+        let _ = w.set_size(LogicalSize::new(lw, lh));
+    }
+    if (target.x, target.y) != (r.x, r.y) {
+        let _ = w.set_position(PhysicalPosition::new(target.x, target.y));
+        persist_position(app);
+    }
+}
+
+/// Cheap fingerprint of the monitor layout (position, size, scale of every monitor).
+fn monitor_signature(app: &AppHandle) -> Vec<(i32, i32, u32, u32, i64)> {
+    let mut v: Vec<_> = app
+        .available_monitors()
+        .unwrap_or_default()
+        .iter()
+        .map(|m| {
+            let (p, s) = (m.position(), m.size());
+            (p.x, p.y, s.width, s.height, (m.scale_factor() * 100.0).round() as i64)
+        })
+        .collect();
+    v.sort_unstable();
+    v
+}
+
+/// Tauri has no display-removed event, so a 3 s watcher compares the monitor fingerprint and
+/// re-clamps the overlay when it changes (also reacts to taskbar / work-area changes via the
+/// overlay's own moved/scale events registered in `lib.rs`).
+pub fn watch_displays(app: AppHandle) {
+    std::thread::Builder::new()
+        .name("display-watch".into())
+        .spawn(move || {
+            let mut last = monitor_signature(&app);
+            loop {
+                std::thread::sleep(std::time::Duration::from_secs(3));
+                let now = monitor_signature(&app);
+                if now != last && !now.is_empty() {
+                    last = now;
+                    reclamp_overlay(&app);
+                }
+            }
+        })
+        .ok();
+}
+
 /* ---- commands: click-through + drag ---- */
 
 pub fn set_interactive(app: &AppHandle, on: bool) {

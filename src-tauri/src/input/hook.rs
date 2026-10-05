@@ -20,6 +20,9 @@ pub fn start(agg: Arc<Mutex<InputAggregator>>, t0: Instant) -> Arc<AtomicBool> {
     let spawned = thread::Builder::new().name("critter-input-hook".into()).spawn(move || {
         let res = rdev::listen(move |ev| {
             let now = t0.elapsed().as_secs_f64() * 1000.0;
+            if !matches!(ev.event_type, EventType::KeyRelease(_) | EventType::ButtonRelease(_)) {
+                crate::scheduler::note_input_activity();
+            }
             match ev.event_type {
                 EventType::KeyPress(_) => agg.lock().key_down(now),
                 // rdev: positive delta_y = wheel up; the contract is +down.

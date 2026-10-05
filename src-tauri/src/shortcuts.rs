@@ -8,6 +8,9 @@ pub fn register(app: &AppHandle) {
     let bind = |accel: &'static str, f: fn(&AppHandle)| {
         let r = app.global_shortcut().on_shortcut(accel, move |app, _sc, ev| {
             if ev.state == ShortcutState::Pressed {
+                if std::env::var_os("CRITTER_DEBUG").is_some() {
+                    eprintln!("[shortcuts] fired {accel}");
+                }
                 f(app);
             }
         });

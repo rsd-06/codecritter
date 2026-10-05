@@ -257,6 +257,21 @@ mod tests {
     }
 
     #[test]
+    fn claude_code_keeps_users_key_order() {
+        let h = Home::new("cc-order");
+        let raw = r#"{"zeta":1,"alpha":{"z":1,"a":2},"hooks":{"Stop":[]},"model":"x"}"#;
+        let p = h.put(&[".claude", "settings.json"], raw);
+        inst("claude-code").install(h.p(), &hook());
+        let keys: Vec<String> = rj(&p).as_object().unwrap().keys().cloned().collect();
+        assert_eq!(keys, ["zeta", "alpha", "hooks", "model"]);
+        let inner: Vec<String> = rj(&p)["alpha"].as_object().unwrap().keys().cloned().collect();
+        assert_eq!(inner, ["z", "a"]);
+        inst("claude-code").uninstall(h.p());
+        let keys: Vec<String> = rj(&p).as_object().unwrap().keys().cloned().collect();
+        assert_eq!(keys, ["zeta", "alpha", "model"]);
+    }
+
+    #[test]
     fn claude_code_removes_only_our_entry_from_a_shared_group() {
         let h = Home::new("cc-shared");
         let p = h.put(

@@ -76,7 +76,12 @@ pub fn build_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
 }
 
 fn on_menu_event(app: &AppHandle, event: MenuEvent) {
-    match event.id().as_ref() {
+    handle_menu_id(app, event.id().as_ref());
+}
+
+/// Executes a tray / context-menu item by id (also driven by the debug self-test).
+pub fn handle_menu_id(app: &AppHandle, id: &str) {
+    match id {
         "char:stitch" => drop(store::update(app, json!({ "character": "stitch" }))),
         "char:yoda" => drop(store::update(app, json!({ "character": "yoda" }))),
         id if id.starts_with("pomo:") => {
