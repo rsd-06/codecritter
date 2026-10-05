@@ -85,7 +85,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] T3 Ship: bundles (NSIS 1.5 MB + MSI 2.1 MB), CI (cargo test on 3 OSes), tauri-action draft release workflow, Electron removed, docs, release metrics
 
 ## v0.2 QA (after Tauri migration) [lead-requested by user]
-- [ ] Full end-to-end mock scenario run of every feature on the Tauri build (scripted: input bursts, scroll, cursor near/far/over, petting, drag/shake, idle→sleep, reminders, pomodoro cycle, messages, pinned note, name, peek on/off all edges, agent events for every agent, settings round-trip, export/import, tray, shortcuts) with screenshots + metrics
+- [x] Full end-to-end mock scenario run of every feature on the Tauri build (scripted: input bursts, scroll, cursor near/far/over, petting, drag/shake, idle→sleep, reminders, pomodoro cycle, messages, pinned note, name, peek on/off all edges, agent events for every agent, settings round-trip, export/import, tray, shortcuts) with screenshots + metrics. Done: `docs/QA-v0.2.md` (14 PASS, 2 PARTIAL: real 300 s sleep and multi-monitor; 3 bugs fixed, open issues O1-O7 listed there)
 - [ ] Real Claude Code integration: install hook from Settings → AI Agents (writes real ~/.claude/settings.json, with backup), run a real `claude -p` prompt, confirm thinking → done reactions, then verify uninstall restores the file
 
 ## v0.2 Launch (after QA)
