@@ -81,7 +81,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] T1 Foundation: scaffold, store, windows, bridge, tray, shortcuts, autostart, cursor hit-test click-through
 - [x] T2a Input (rdev) + cursor + peek
 - [x] T2b Agents server + installers (Rust) + tests
-- [ ] T2c Scheduler + pomodoro + sync (Rust) + tests
+- [x] T2c Scheduler + pomodoro + sync (Rust) + tests
 - [ ] T3 Ship: bundles, CI, release workflow, remove Electron, docs, final metrics
 
 ## v0.2 QA (after Tauri migration) [lead-requested by user]
