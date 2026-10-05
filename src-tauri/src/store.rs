@@ -104,7 +104,7 @@ fn write(app: &AppHandle, s: &Value) {
 pub fn init(app: &AppHandle) {
     let raw = path(app)
         .and_then(|p| std::fs::read_to_string(p).ok())
-        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .and_then(|t| serde_json::from_str::<Value>(t.strip_prefix('\u{feff}').unwrap_or(&t)).ok())
         .unwrap_or(Value::Null);
     let s = load_from(raw);
     write(app, &s);

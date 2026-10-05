@@ -40,6 +40,8 @@ pub fn hash_text(t: &str) -> u64 {
 
 /// Merge imported JSON text onto `current`, keeping position/token/syncFolder/port local.
 pub fn merge_imported(text: &str, current: &Value) -> Option<Value> {
+    // Editors / PowerShell often save UTF-8 with a BOM; serde_json rejects it.
+    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
     let raw: Value = serde_json::from_str(text).ok()?;
     if !raw.is_object() {
         return None;
@@ -281,6 +283,9 @@ mod tests {
         assert_eq!(m["agents"]["port"], 50000);
         assert_eq!(m["syncFolder"], "D:/sync");
         assert!(merge_imported("nope", &cur).is_none());
+        // a UTF-8 BOM (Notepad, PowerShell Set-Content -Encoding UTF8) must not break the import
+        let bom = format!("\u{feff}{}", remote);
+        assert_eq!(merge_imported(&bom, &cur).unwrap()["userName"], m["userName"]);
         assert!(merge_imported("[1]", &cur).is_none());
     }
 
