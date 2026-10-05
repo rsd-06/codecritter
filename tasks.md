@@ -102,3 +102,4 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] Bubbles / pomodoro / particles / peek anchored to character metrics + anchors (head top, eyes)
 - [x] Eye tracking: per-eye mapping from real eye screen positions (behavior/look.ts + tests), convergence, symmetric rounding, critically damped smoothing, peek rotation, irises clipped to eye whites
 - [x] Regenerated sprites, icons, tray, README media
+- [ ] Final handoff: after QA + release are verified and published, copy the published Windows installer (NSIS .exe, + .msi) to C:\Users\rsudh\Downloads\Installers for the user to install manually (check C: free space first; installer is ~1.5 MB)
