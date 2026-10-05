@@ -16,7 +16,20 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Linux system libraries (Tauri/WebKitGTK, tray, rdev)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            patchelf libxdo-dev libxtst-dev libx11-dev libxi-dev libssl-dev libgtk-3-dev build-essential
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
       - run: npm run lint
+      # tauri::generate_context! needs the built frontend (dist-tauri) to compile
+      - run: npm run build
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
