@@ -1,3 +1,4 @@
+/* global process, console, Buffer, window */
 // Renders the landing-site feature clips: runs tools/clips/capture.ts (the real overlay engine on a
 // manual clock) in a headless Chromium via Playwright, grabs every frame as PNG, then encodes seamless
 // loops with ffmpeg: WebM (VP9) + MP4 (H.264, yuv420p, faststart) + a WebP poster per clip.
