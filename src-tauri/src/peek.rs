@@ -130,6 +130,9 @@ pub fn set_peek(app: &AppHandle, on: bool) {
     if st.peeking.swap(on, Ordering::Relaxed) == on {
         return;
     }
+    if std::env::var_os("CRITTER_DEBUG").is_some() {
+        eprintln!("[critter] peek {} (toggle)", if on { "ON" } else { "off" });
+    }
     if on {
         apply(app);
     } else {
