@@ -6,9 +6,13 @@
 
 **A tiny pixel companion that lives on your desktop, watches you code, and reacts to your AI agents.**
 
-Free, open source, no telemetry. Windows, macOS and Linux.
+Free, open source, no telemetry. Windows installer is 1.5 MB.
 
-[Download](https://github.com/rsd-06/codecritter/releases) · [AI agents](docs/agents.md) · [Make a character](docs/characters.md) · [Contributing](CONTRIBUTING.md)
+[**Download for Windows**](https://github.com/rsd-06/codecritter/releases/latest) · [AI agents](docs/agents.md) · [Make a character](docs/characters.md) · [Contributing](CONTRIBUTING.md)
+
+<a href="docs/media/launch.mp4"><img src="docs/media/launch-poster.jpg" alt="Watch the 20-second CodeCritter launch video" width="640"></a>
+
+<sub>▶ Watch the 20-second launch video</sub>
 
 </div>
 
@@ -170,3 +174,5 @@ Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.
 ## Disclaimer
 
 CodeCritter is an independent, unofficial, non-commercial fan project. **Stitch is a character of and copyright (c) Disney. Yoda is a character of and copyright (c) Lucasfilm Ltd.** All rights belong to their respective owners. CodeCritter is **not affiliated with, endorsed by or sponsored by** Disney, Lucasfilm, or any of the AI-agent or desktop-pet products mentioned here. The characters are plain pixel-art data and the character system is pluggable, so they can be swapped for original characters at any time. The MIT license covers the source code only, not the third-party characters it depicts.
+
+Launch video music: "Happy Beats / Business Moves vol. 9" by [ende.app](https://ende.app/en), CC BY 4.0.
