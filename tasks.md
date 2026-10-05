@@ -91,11 +91,11 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] QA follow-ups: agent Install UX + inline result + debug CRITTER_AGENT_HOME, reminder queue, peek hit-testing + note hidden + toggle logging, NSIS registry cleanup, async open_settings (see docs/QA-v0.2.md "Fixed in the follow-up pass")
 
 ## v0.2 Launch (after QA)
-- [ ] Windows installer (Tauri NSIS .exe + MSI) attached to a GitHub Release; tested install → run → uninstall on this machine
-- [ ] Landing page (single page, interactive, clean + vibrant, minimal): hero with live character demo, all features, AI agents, download button → latest release, contact details, open-source/contribute CTA; deployed on Vercel
-- [ ] Launch video via brag skill; embedded on site + README
-- [ ] Open-source hygiene: issue/PR templates, CODE_OF_CONDUCT, good-first-issue labels, Discussions on
-- [ ] Launch kit for X / Threads / Instagram (rsd.exe): post drafts, thread, reel script + captions, posting schedule; Show HN / Reddit / Product Hunt drafts (user posts)
+- [x] Windows installer (Tauri NSIS .exe + MSI) attached to a GitHub Release; tested install → run → uninstall on this machine
+- [x] Landing page (single page, interactive, clean + vibrant, minimal): hero with live character demo, all features, AI agents, download button → latest release, contact details, open-source/contribute CTA; deployed on Vercel
+- [x] Launch video via brag skill; embedded on site + README
+- [x] Open-source hygiene: issue/PR templates, CODE_OF_CONDUCT, good-first-issue labels, Discussions on
+- [x] Launch kit for X / Threads / Instagram (rsd.exe): post drafts, thread, reel script + captions, posting schedule; Show HN / Reddit / Product Hunt drafts (user posts)
 
 ## Art & eye-tracking pass [art agent] - owns overlay/characters, overlay/engine, playground, tools media
 - [x] Stitch likeness: wide high ears (notch on left ear, navy interior + pink inner), glossy tilted oval eyes with one highlight in darker patches, big navy nose, very wide mouths, crown marking + stripes, chest patch, stubby arms with dark claws
@@ -104,4 +104,4 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] Bubbles / pomodoro / particles / peek anchored to character metrics + anchors (head top, eyes)
 - [x] Eye tracking: per-eye mapping from real eye screen positions (behavior/look.ts + tests), convergence, symmetric rounding, critically damped smoothing, peek rotation, irises clipped to eye whites
 - [x] Regenerated sprites, icons, tray, README media
-- [ ] Final handoff: after QA + release are verified and published, copy the published Windows installer (NSIS .exe, + .msi) to C:\Users\rsudh\Downloads\Installers for the user to install manually (check C: free space first; installer is ~1.5 MB)
+- [x] Final handoff: after QA + release are verified and published, copy the published Windows installer (NSIS .exe, + .msi) to C:\Users\rsudh\Downloads\Installers for the user to install manually (check C: free space first; installer is ~1.5 MB)
