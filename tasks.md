@@ -83,3 +83,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [ ] T2b Agents server + installers (Rust) + tests
 - [ ] T2c Scheduler + pomodoro + sync (Rust) + tests
 - [ ] T3 Ship: bundles, CI, release workflow, remove Electron, docs, final metrics
+
+## v0.2 QA (after Tauri migration) [lead-requested by user]
+- [ ] Full end-to-end mock scenario run of every feature on the Tauri build (scripted: input bursts, scroll, cursor near/far/over, petting, drag/shake, idle→sleep, reminders, pomodoro cycle, messages, pinned note, name, peek on/off all edges, agent events for every agent, settings round-trip, export/import, tray, shortcuts) with screenshots + metrics
+- [ ] Real Claude Code integration: install hook from Settings → AI Agents (writes real ~/.claude/settings.json, with backup), run a real `claude -p` prompt, confirm thinking → done reactions, then verify uninstall restores the file
