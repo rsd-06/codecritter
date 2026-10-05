@@ -1,0 +1,26 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "CodeCritter",
+  "version": "0.2.0",
+  "identifier": "com.codecritter.app",
+  "build": {
+    "beforeDevCommand": "npm run gen:defaults && vite --config vite.tauri.config.ts",
+    "beforeBuildCommand": "npm run gen:defaults && vite build --config vite.tauri.config.ts",
+    "devUrl": "http://localhost:5175",
+    "frontendDist": "../dist-tauri"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "macOSPrivateApi": true,
+    "windows": [],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost ws://localhost:5175 http://localhost:5175"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/icon.png", "icons/icon.ico", "icons/icon.icns"]
+  }
+}

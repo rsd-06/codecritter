@@ -9,3 +9,6 @@ __pycache__/
 coverage/
 .vite/
 tools/out/
+dist-tauri/
+src-tauri/target/
+src-tauri/gen/

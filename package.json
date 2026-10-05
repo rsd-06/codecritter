@@ -36,9 +36,18 @@
     "format": "prettier --write .",
     "playground": "vite --config vite.playground.config.ts",
     "dist": "electron-vite build && electron-builder",
-    "sprites:export": "esbuild tools/sprite-export.ts --bundle --platform=node --format=esm --alias:@shared=./src/shared --outfile=tools/out/.sprite-export.mjs --log-level=warning && node tools/out/.sprite-export.mjs"
+    "sprites:export": "esbuild tools/sprite-export.ts --bundle --platform=node --format=esm --alias:@shared=./src/shared --outfile=tools/out/.sprite-export.mjs --log-level=warning && node tools/out/.sprite-export.mjs",
+    "tauri": "tauri",
+    "gen:defaults": "node tools/gen-defaults.mjs",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.12.1",
+    "@tauri-apps/plugin-autostart": "^2.7.0",
+    "@tauri-apps/plugin-dialog": "^2.8.1",
+    "@tauri-apps/plugin-global-shortcut": "^2.4.0",
     "electron-store": "^8.2.0",
     "koffi": "^3.3.2",
     "react": "^19.3.0",
@@ -50,6 +59,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@tauri-apps/cli": "^2.12.1",
     "@types/node": "^22.20.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

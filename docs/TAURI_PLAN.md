@@ -54,3 +54,53 @@ pointer events work normally (drag, right-click, petting). Cursor polling runs a
 - T3 Ship: tauri bundler (NSIS + MSI win, dmg mac, AppImage+deb linux), icons, CI (cargo test + npm test on 3
   OSes, Linux needs libwebkit2gtk-4.1-dev etc.), release workflow (tauri-action, draft), delete src/main +
   src/preload + Electron deps after parity, README/CONTRIBUTING/PLAN updates, final metrics.
+
+## Module signatures (final, T1)
+T2 agents fill bodies only; `lib.rs`, `store.rs`, `commands.rs`, `Cargo.toml` are T1-owned. Deps for every
+module are already in `Cargo.toml` (rdev, tiny_http, rand, parking_lot, dirs, toml_edit, chrono,
+`notify` via feature `notify-watch`, `windows` crate on Windows).
+
+```rust
+input::start(app: AppHandle)                       // T2a  src/input/mod.rs (+ aggregator.rs, hook.rs)
+cursor::start(app: AppHandle)                      // T2a  src/cursor.rs (T1 has a minimal working poller)
+peek::start(app: AppHandle)                        // T2a  src/peek.rs
+peek::set_peek(app: &AppHandle, on: bool)          //      flips state, emits critter:peek, refreshes tray
+agents::start(app: AppHandle)                      // T2b  src/agents/mod.rs (+ server, token, hookcmd, installers/)
+agents::restart(app: &AppHandle)                   //      called by store::update when agents.enabled/port change
+agents::status_all() -> serde_json::Value          //      { id: { installed, path } }
+agents::install(id: &str) -> (bool, String)
+agents::uninstall(id: &str) -> (bool, String)
+scheduler::start(app: AppHandle)                   // T2c  src/scheduler/mod.rs (+ reminders, pomodoro)
+scheduler::on_settings_changed(app: &AppHandle)    //      reminders/pomodoro/messages/dnd changed
+scheduler::pomodoro_cmd(app: &AppHandle, cmd: &str) -> serde_json::Value   // start|pause|resume|skip|stop -> PomodoroState
+scheduler::pomodoro_state(app: &AppHandle) -> serde_json::Value
+scheduler::test_reminder(app: &AppHandle, kind: &str)
+sync::start(app: AppHandle)                        // T2c  src/sync.rs
+sync::on_settings_changed(app: &AppHandle)         //      EXTRA hook (not in the original plan), called on every settings change
+sync::export(app: &AppHandle) -> Option<String>    //      blocking dialog inside; runs on a blocking thread
+sync::import(app: &AppHandle) -> bool
+```
+
+Helpers available to modules: `crate::store::{get, get_ptr(app,"/peek/edge"), scale, update(app, patch)}` (update
+persists, emits `critter:settings` to all windows and runs the hooks above), `crate::winmgr::{emit_overlay,
+overlay, set_peek_position, open_settings, toggle_companion_visible}`, `crate::state::{is_paused, is_peeking,
+is_hidden, set_paused}` and `AppState` via `app.state::<AppState>()`.
+
+### Decisions / deviations recorded in T1
+- **Event names:** Tauri v2 allows alphanumerics, `-`, `/`, `:` and `_`, so the IPC names (`critter:input`,
+  `critter:cursor`, `critter:agent`, `critter:reminder`, `critter:pomodoro`, `critter:settings`, `critter:peek`)
+  are used UNCHANGED (verified at runtime: cursor + settings events reach the overlay). Payloads are camelCase JSON
+  matching `src/shared/types.ts`. `app.emit` reaches every window, `winmgr::emit_overlay` only the overlay.
+- **CursorSample is in PHYSICAL screen pixels** (x, y, winX, winY, winW, winH from `outer_position/outer_size`).
+  The renderer converts with `winW / innerWidth`, so no devicePixelRatio is needed. `cursor::start` must keep
+  sampling while reactions are paused (the overlay hit-tests click-through from it); only stop when hidden.
+- **Commands:** arg names in JS are camelCase (`{ patch }`, `{ on }`, `{ cmd }`, `{ id }`, `{ dx, dy }`), and
+  `test_event` takes `{ kind }` (`type` is a Rust keyword). Extra commands: `open_external(url)` (https only, used by
+  `window.open` in settings), `rebroadcast_settings`.
+- **`windows.rs` is `winmgr.rs`**: a module called `windows` would shadow the `windows` crate used by peek.rs.
+- **settings.position** stores PHYSICAL px with `displayId` always 0 (no stable monitor ids in Tauri); on restore the
+  point is mapped to the monitor containing it and clamped to its work area. Window opacity is applied by the
+  renderer (canvas CSS opacity); Tauri has no window-opacity API.
+- Extra plugins beyond the plan: `tauri-plugin-single-instance` (2nd launch opens settings) and
+  `tauri-plugin-opener` (external links). Autostart applies in release builds only.
+- Webview memory flags: `winmgr::WEBVIEW2_ARGS` (Windows) disables the GPU process, limits renderers to 1, etc.

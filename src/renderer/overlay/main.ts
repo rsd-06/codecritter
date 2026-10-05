@@ -1,7 +1,8 @@
 // Overlay app entry. All Electron access goes through bridge.ts so this runs in a plain browser too.
 import { DEFAULT_SETTINGS } from '@shared/defaults';
-import type { OverlayBridge, Settings } from '@shared/types';
+import type { CursorSample, OverlayBridge, Settings } from '@shared/types';
 import { getBridge } from './bridge';
+import { isTauriRuntime } from '../tauri-bridge';
 import { createCharacter } from './characters';
 import { OverlayDriver } from './behavior/driver';
 import { Scheduler } from './engine/scheduler';
@@ -58,7 +59,10 @@ export function startOverlay(
 
   const offs = [
     bridge.onSettings(applySettings),
-    bridge.onCursor((c) => driver.handleCursor(c)),
+    bridge.onCursor((c) => {
+      driver.handleCursor(c);
+      if (tauriHitTest) hitTestFromCursor(c);
+    }),
     bridge.onInput((i) => driver.handleInput(i)),
     bridge.onAgent((e) => driver.handleAgent(e)),
     bridge.onReminder((r) => driver.handleReminder(r)),
@@ -71,6 +75,17 @@ export function startOverlay(
   let over = false;
   let dragging = false;
   let last = { x: 0, y: 0 };
+
+  // Tauri: set_ignore_cursor_events(true) swallows pointer moves, so hover is derived from
+  // CursorSample (physical screen px + overlay bounds) instead of DOM events. DOM events still
+  // work while the window is interactive (drag, right-click, petting).
+  const tauriHitTest = isTauriRuntime() && !window.critter;
+  const hitTestFromCursor = (c: CursorSample): void => {
+    if (dragging || c.winW <= 0 || c.winH <= 0) return;
+    const cx = ((c.x - c.winX) * window.innerWidth) / c.winW;
+    const cy = ((c.y - c.winY) * window.innerHeight) / c.winH;
+    setOver(stage.hitTest(cx, cy));
+  };
 
   const setOver = (v: boolean): void => {
     if (v === over) return;
@@ -144,6 +159,6 @@ export function startOverlay(
 }
 
 // Only auto-start inside the real overlay window (the playground calls startOverlay itself).
-if (typeof window !== 'undefined' && window.critter) {
-  startOverlay(window.critter);
+if (typeof window !== 'undefined' && (window.critter || isTauriRuntime())) {
+  startOverlay(window.critter ?? getBridge());
 }

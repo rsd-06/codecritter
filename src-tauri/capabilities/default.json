@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Overlay and settings windows: core events/commands only (no fs, shell or http).",
+  "windows": ["overlay", "settings"],
+  "permissions": ["core:default"]
+}

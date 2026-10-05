@@ -9,6 +9,7 @@ import type {
   ReminderEvent,
   Settings,
 } from '@shared/types';
+import { TauriBridge, isTauriRuntime } from '../tauri-bridge';
 
 type Handler<T> = (v: T) => void;
 
@@ -123,6 +124,7 @@ export class MockBridge implements OverlayBridge {
 export type AnyBridge = OverlayBridge & { mock?: MockBridge };
 
 export function getBridge(): AnyBridge {
+  if (isTauriRuntime()) return new TauriBridge();
   if (typeof window !== 'undefined' && window.critter) return window.critter;
   const m = new MockBridge();
   return Object.assign(m, { mock: m });
