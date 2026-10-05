@@ -328,6 +328,47 @@ describe('Brain: priorities and interruptions', () => {
   });
 });
 
+describe('Brain: reminder queue', () => {
+  it('stretch + water in the same tick show one after the other, ~6 s apart', () => {
+    const r = rig();
+    r.brain.handleReminder({ kind: 'stretch', text: '', durationMs: 6000 });
+    r.brain.handleReminder({ kind: 'water', text: '', durationMs: 6000 });
+    expect(r.log.bubbles.length).toBe(1);
+    r.advance(3);
+    expect(r.log.bubbles.length).toBe(1);
+    expect(r.brain.reminder.kind).toBe('stretch');
+    r.advance(3.5);
+    expect(r.log.bubbles.length).toBe(2);
+    expect(r.brain.reminder.kind).toBe('water');
+    r.advance(10);
+    expect(r.log.bubbles.length).toBe(2);
+  });
+
+  it('drops same-kind duplicates and caps the queue at 3', () => {
+    const r = rig();
+    const ev = (kind: 'stretch' | 'water' | 'message' | 'pomodoro-focus' | 'pomodoro-break', text = '') =>
+      r.brain.handleReminder({ kind, text, durationMs: 4000 });
+    ev('stretch');
+    ev('stretch'); // dup of the one showing
+    ev('water');
+    ev('water'); // dup in queue
+    ev('message', 'a');
+    ev('pomodoro-focus');
+    ev('pomodoro-break'); // 5th: queue (water, message, focus) is full
+    r.advance(40);
+    expect(r.log.bubbles.length).toBe(4);
+  });
+
+  it('a queued reminder still shows while peeking', () => {
+    const r = rig();
+    r.brain.handlePeek(true);
+    r.brain.handleReminder({ kind: 'stretch', text: '', durationMs: 3000 });
+    r.brain.handleReminder({ kind: 'water', text: '', durationMs: 3000 });
+    r.advance(4);
+    expect(r.log.bubbles.length).toBe(2);
+  });
+});
+
 describe('Brain: reminders', () => {
   it('stretch grows the character by 1.4x and shows a personalised bubble', () => {
     const r = rig();
@@ -778,6 +819,18 @@ describe('Brain: curious, surprised, late night, peek', () => {
     r.brain.forceHour(2);
     r.type(1);
     expect(r.log.bubbles.length).toBe(1);
+  });
+
+  it('peek hides the pinned note and restores it afterwards', () => {
+    const r = rig();
+    r.brain.applySettings({ ...DEFAULT_SETTINGS, pinnedNote: 'ship it' });
+    expect(r.log.note).toBe('ship it');
+    r.brain.handlePeek(true);
+    expect(r.log.note).toBe('');
+    r.brain.applySettings({ ...DEFAULT_SETTINGS, pinnedNote: 'ship it too' });
+    expect(r.log.note).toBe('');
+    r.brain.handlePeek(false);
+    expect(r.log.note).toBe('ship it too');
   });
 
   it('peek: sneaky, head pushed to the screen edge, reminders still show', () => {

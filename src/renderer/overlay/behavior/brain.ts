@@ -31,6 +31,7 @@ import { formatMMSS, type PomodoroView } from '../engine/widgets';
 import { AgentTracker } from './agents';
 import { PettingDetector, ShakeDetector } from './detectors';
 import { computeLook, type LookGeom } from './look';
+import { ReminderQueue } from './reminderQueue';
 import { pick, truncate } from './strings';
 import { BORED_AFTER_MS, STATE_ORDER, PENDING_TTL_S, createStates, type BState, type StateId } from './states';
 
@@ -212,6 +213,10 @@ export class Brain {
   alertUntil = 0;
   alertReq = { pending: false, until: 0, agent: 'generic', message: '', error: false };
   reminder: { kind: ReminderKind | null; until: number } = { kind: null, until: 0 };
+  /** Reminders waiting for the one on screen to finish (sequential, ~6 s each). */
+  private readonly reminderQ = new ReminderQueue();
+  private reminderShowing: ReminderEvent | null = null;
+  private reminderBusyUntil = 0;
   pomo: PomodoroState | null = null;
   private pomoTotalMs = 0;
   private lastPomoSecond = -1;
@@ -309,7 +314,7 @@ export class Brain {
   applySettings(s: Settings): void {
     this.settings = s;
     this.character = s.character;
-    this.sinks.setNote(s.pinnedNote);
+    this.sinks.setNote(this.peeking ? '' : s.pinnedNote); // peek: only reminders show
     if (!s.reactions.eyeFollow) {
       this.lookTx = this.lookTy = this.lookTc = 0;
       this.pushLook();
@@ -471,6 +476,18 @@ export class Brain {
 
   handleReminder(r: ReminderEvent): void {
     const t = this.t();
+    if (t < this.reminderBusyUntil) {
+      this.reminderQ.push(r, this.reminderShowing);
+      this.wakeFn();
+      return;
+    }
+    this.showReminder(r);
+  }
+
+  private showReminder(r: ReminderEvent): void {
+    const t = this.t();
+    this.reminderShowing = r;
+    this.reminderBusyUntil = t + Math.max(2.5, r.durationMs / 1000);
     let text: string;
     switch (r.kind) {
       case 'message':
@@ -513,6 +530,7 @@ export class Brain {
 
   handlePeek(on: boolean): void {
     this.peeking = on;
+    this.sinks.setNote(on ? '' : this.settings.pinnedNote);
     if (on) {
       this.reminder.kind = null;
       this.dragging = false;
@@ -656,6 +674,10 @@ export class Brain {
     }
     if (!this.dragging) this.shake.tick(t);
 
+    if (this.reminderQ.length > 0 && t >= this.reminderBusyUntil) {
+      const next = this.reminderQ.shift();
+      if (next) this.showReminder(next);
+    }
     this.select(t);
     resetIntent(this.i);
     this.state.update(dt, this);
@@ -850,6 +872,7 @@ export class Brain {
     // deadlines (no per-tick allocation: plain comparisons)
     d = soonest(d, t, this.forced ? this.forced.until : 0);
     d = soonest(d, t, this.reminder.kind ? this.reminder.until : 0);
+    d = soonest(d, t, this.reminderQ.length > 0 ? this.reminderBusyUntil : 0);
     d = soonest(d, t, this.surprisedUntil);
     d = soonest(d, t, this.nudgeUntil);
     d = soonest(d, t, this.dizzyUntil);
