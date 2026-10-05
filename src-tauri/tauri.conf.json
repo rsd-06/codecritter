@@ -45,7 +45,8 @@
         "installMode": "currentUser",
         "startMenuFolder": "CodeCritter",
         "displayLanguageSelector": false,
-        "compression": "lzma"
+        "compression": "lzma",
+        "installerHooks": "./installer-hooks.nsh"
       }
     },
     "macOS": {
