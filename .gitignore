@@ -12,3 +12,5 @@ tools/out/
 dist-tauri/
 src-tauri/target/
 src-tauri/gen/
+site/dist/
+site/node_modules/

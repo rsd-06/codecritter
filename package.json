@@ -38,7 +38,10 @@
     "playground": "vite --config vite.playground.config.ts",
     "gen:defaults": "node tools/gen-defaults.mjs",
     "sprites:export": "esbuild tools/sprite-export.ts --bundle --platform=node --format=esm --alias:@shared=./src/shared --outfile=tools/out/.sprite-export.mjs --log-level=warning && node tools/out/.sprite-export.mjs",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "site:dev": "vite --config site/vite.config.ts",
+    "site:build": "vite build --config site/vite.config.ts",
+    "site:preview": "vite preview --config site/vite.config.ts"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.1",

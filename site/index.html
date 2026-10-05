@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en" data-char="stitch">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CodeCritter | A pixel desktop companion for developers</title>
+    <meta
+      name="description"
+      content="CodeCritter is a free, open-source pixel companion that lives on your desktop and reacts to your typing, your cursor and your AI coding agents. Windows installer 1.5 MB, MIT."
+    />
+    <meta name="theme-color" content="#f5f8ff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c1230" media="(prefers-color-scheme: dark)" />
+    <link rel="canonical" href="https://codecritter.vercel.app/" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="CodeCritter: a pixel companion for your desktop and your AI agents" />
+    <meta
+      property="og:description"
+      content="Reacts to your typing, your cursor and Claude Code, Codex, Cursor, Gemini and more. Free, open source, 1.5 MB."
+    />
+    <meta property="og:image" content="/media/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Pixel art Stitch and Yoda next to the CodeCritter name" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="CodeCritter: a pixel companion for your desktop and your AI agents" />
+    <meta name="twitter:description" content="Free, open source, 1.5 MB. Reacts to your typing, cursor and AI coding agents." />
+    <meta name="twitter:image" content="/media/og.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&family=Silkscreen:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="nav">
+      <a class="brand" href="#top" aria-label="CodeCritter home">
+        <img src="/favicon-32.png" width="28" height="28" alt="" />
+        <span>CodeCritter</span>
+      </a>
+      <nav aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#agents">AI agents</a>
+        <a href="#install">Install</a>
+        <a href="#open-source">Open source</a>
+      </nav>
+      <a class="btn btn-small" href="https://github.com/rsd-06/codecritter" rel="noopener">Star on GitHub</a>
+    </header>
+
+    <main id="main">
+      <!-- ============================== HERO ============================== -->
+      <section class="hero" id="top">
+        <div class="hero-copy">
+          <h1>Your code has a new co-worker.</h1>
+          <p class="pitch">
+            A pixel desktop companion that reacts to your typing, your cursor and your AI coding agents.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="https://github.com/rsd-06/codecritter/releases/latest" rel="noopener">
+              Download for Windows
+            </a>
+            <a class="btn btn-ghost" href="https://github.com/rsd-06/codecritter" rel="noopener">Star on GitHub</a>
+          </div>
+          <p class="fine">
+            1.5 MB installer. Free and open source under the MIT license. macOS and Linux:
+            <a href="#install">build from source</a> for now.
+          </p>
+        </div>
+
+        <div class="hero-stage">
+          <div class="plate" id="plate">
+            <div class="slot" id="slot">
+              <canvas
+                id="critter"
+                width="256"
+                height="224"
+                role="img"
+                aria-label="Live pixel critter. Its eyes follow your cursor. Click it to pet it, type to make it type along."
+              ></canvas>
+            </div>
+          </div>
+          <div class="stage-controls">
+            <div class="seg" role="group" aria-label="Choose a character">
+              <button type="button" data-char-btn="stitch" aria-pressed="true">Stitch</button>
+              <button type="button" data-char-btn="yoda" aria-pressed="false">Yoda</button>
+            </div>
+            <button type="button" class="chip" id="sound" aria-pressed="false">Sound off</button>
+          </div>
+          <p class="try" id="try">Move your mouse, type anything, or click the critter to pet it.</p>
+          <div class="chips" role="group" aria-label="Trigger a reminder">
+            <button type="button" class="chip" data-remind="stretch">Stretch reminder</button>
+            <button type="button" class="chip" data-remind="water">Water reminder</button>
+            <button type="button" class="chip" data-remind="pomodoro-done">Pomodoro done</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== VIDEO ============================== -->
+      <section class="video" id="video" hidden aria-labelledby="video-h">
+        <h2 id="video-h">See it on a real desktop</h2>
+        <video controls preload="none" playsinline poster="/media/launch-poster.png" id="launch-video">
+          <source src="/media/launch.mp4" type="video/mp4" />
+          Your browser cannot play this video.
+        </video>
+      </section>
+
+      <!-- ============================== FEATURES ============================== -->
+      <section class="section" id="features" aria-labelledby="features-h">
+        <div class="section-head">
+          <h2 id="features-h">Everything it does</h2>
+          <p>Eighteen features, all running locally. Most of them you only notice when they happen.</p>
+        </div>
+
+        <div class="cols">
+          <div class="col">
+            <h3>It reacts to you</h3>
+            <ul class="flist">
+              <li><b>Typing</b> Paws knead along with your keys. Key counts only, never what you type.</li>
+              <li><b>Overheat</b> Hammer the keyboard for a few seconds and it turns red and steams.</li>
+              <li><b>Scrolling</b> Scroll and it unrolls a paper roll (a scroll for Yoda).</li>
+              <li><b>Cursor eyes</b> Pupils and head follow your cursor across every monitor.</li>
+              <li><b>Mouse hunt</b> Whip the cursor past it and it crouches, wiggles and pounces.</li>
+              <li><b>Petting</b> Rub the cursor over its head for hearts and a purr.</li>
+              <li><b>Drag and shake</b> Grab it like mochi. Shake it and it gets dizzy.</li>
+            </ul>
+          </div>
+
+          <div class="col">
+            <h3>It looks after you</h3>
+            <ul class="flist">
+              <li><b>Idle and sleep</b> It gets bored when you leave and falls asleep, then wakes the moment you return.</li>
+              <li><b>Stretch and water</b> Reminders on your own schedule, with do-not-disturb hours.</li>
+              <li><b>Pomodoro</b> Focus, break and long-break loops with a pixel timer beside it.</li>
+              <li><b>Scheduled messages</b> A note at a set time: once, daily or on weekdays.</li>
+              <li><b>Pinned note</b> A sticky note that stays above its head.</li>
+              <li><b>Your name</b> Bubbles use your name. Yoda keeps his syntax.</li>
+            </ul>
+          </div>
+
+          <div class="col">
+            <h3>It stays out of your way</h3>
+            <ul class="flist">
+              <li><b>Peek mode</b> Hides at a screen edge while a fullscreen app or video is up. Only reminders break through.</li>
+              <li><b>Tray and shortcuts</b> Switch character, run Pomodoro, mute or hide from the tray. Global hotkeys for peek, hide and settings.</li>
+              <li><b>Settings sync</b> Export and import settings, or point it at a sync folder to share them across machines.</li>
+              <li><b>Make it yours</b> Edit colours with a live preview, scale 1 to 4x, opacity, sound and volume.</li>
+              <li><b>Click-through</b> Clicks pass through everything except the critter itself.</li>
+              <li><b>Autostart</b> Optional. Quiet by design.</li>
+            </ul>
+          </div>
+        </div>
+
+        <figure class="gallery">
+          <div class="gallery-imgs">
+            <img src="/media/gallery-stitch.png" width="1222" height="766" loading="lazy" decoding="async" alt="Stitch shown in 18 different facial expressions, drawn in pixel art" />
+            <img src="/media/gallery-yoda.png" width="1222" height="766" loading="lazy" decoding="async" alt="Yoda shown in 18 different facial expressions, drawn in pixel art" />
+          </div>
+          <figcaption>18 expressions per character. Every sprite is plain pixel-grid data, so colours change live and new characters need no art pipeline.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ============================== AGENTS ============================== -->
+      <section class="section agents" id="agents" aria-labelledby="agents-h">
+        <div class="section-head">
+          <h2 id="agents-h">It watches your AI agents work</h2>
+          <p>
+            When your coding agent thinks, runs a tool, waits for you, finishes or fails, the critter reacts. Pick an
+            agent and fire an event at the critter on this page.
+          </p>
+        </div>
+
+        <div class="agent-grid">
+          <div class="demo" aria-labelledby="demo-h">
+            <h3 id="demo-h">Try it live</h3>
+            <div class="agent-pick" role="group" aria-label="Pick an agent" id="agent-pick"></div>
+            <div class="agent-btns" role="group" aria-label="Send an event">
+              <button type="button" class="btn btn-ghost" data-ev="thinking">Thinking</button>
+              <button type="button" class="btn btn-ghost" data-ev="tool">Using a tool</button>
+              <button type="button" class="btn btn-ghost" data-ev="attention">Waiting for you</button>
+              <button type="button" class="btn btn-ghost" data-ev="done">Done</button>
+              <button type="button" class="btn btn-ghost" data-ev="error">Error</button>
+            </div>
+            <pre class="term" id="term" aria-live="polite" aria-label="Events sent to the critter"><span class="dim">$ waiting for an event...</span></pre>
+            <p class="fine">The critter is the one you see on this page (it sits in the corner as you scroll).</p>
+          </div>
+
+          <div class="how">
+            <h3>How it works with your agent</h3>
+            <ol class="steps">
+              <li>
+                <b>Install the hook.</b> Open Settings, then Agents, and click Install. CodeCritter edits your agent's
+                config for you, keeps a backup, and can uninstall just as cleanly.
+              </li>
+              <li>
+                <b>Work as usual.</b> The agent's hook sends a tiny status event to an endpoint on your own machine
+                (127.0.0.1, with a random token).
+              </li>
+              <li>
+                <b>Watch the critter.</b> It thinks along, hops when the agent is done and sounds the alarm on errors or
+                questions.
+              </li>
+            </ol>
+            <p class="fine">
+              One-click install: Claude Code, Codex CLI, Cursor, Gemini CLI, Antigravity, Kiro, GitHub Copilot CLI and
+              OpenCode. Devin and anything else: one <code>curl</code> call.
+              <a href="https://github.com/rsd-06/codecritter/blob/main/docs/agents.md" rel="noopener">Agent setup guide</a>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== PRIVACY + FOOTPRINT ============================== -->
+      <section class="section split" id="privacy" aria-labelledby="privacy-h">
+        <div>
+          <h2 id="privacy-h">Private and tiny</h2>
+          <ul class="flist plain">
+            <li><b>Counts, not content.</b> Keystrokes become a rate. Key identities never leave the input hook and are never stored.</li>
+            <li><b>No telemetry, no network.</b> No analytics, no update ping. The agent endpoint only listens on your own machine and rejects browser requests.</li>
+            <li><b>Quiet when idle.</b> It redraws about once a second at rest, and only while animating otherwise.</li>
+          </ul>
+        </div>
+        <dl class="stats" aria-label="Measured on Windows 11, release build, idle">
+          <div><dt>Installer</dt><dd>1.5 MB</dd></div>
+          <div><dt>Memory in Task Manager</dt><dd>~55 MB</dd></div>
+          <div><dt>CPU at idle</dt><dd>~1%</dd></div>
+          <p class="fine">
+            One core, release build, idle. The 55 MB is the Task Manager Memory column (private working set);
+            counting shared WebView2 pages, the six processes total about 280 MB. Source:
+            <a href="https://github.com/rsd-06/codecritter/blob/main/docs/QA-v0.2.md" rel="noopener">QA report</a>.
+          </p>
+        </dl>
+      </section>
+
+      <!-- ============================== INSTALL ============================== -->
+      <section class="section" id="install" aria-labelledby="install-h">
+        <div class="section-head">
+          <h2 id="install-h">Install</h2>
+        </div>
+        <div class="install-grid">
+          <div class="inst">
+            <h3>Windows</h3>
+            <p>
+              Download <code>CodeCritter_*_x64-setup.exe</code>. It installs per user, no admin needed, and fetches
+              the WebView2 runtime only if your PC lacks it.
+            </p>
+            <a class="btn btn-primary" href="https://github.com/rsd-06/codecritter/releases/latest" rel="noopener">Download for Windows</a>
+            <p class="fine">
+              Builds are unsigned for now. If SmartScreen says "Windows protected your PC", choose More info, then Run anyway.
+            </p>
+          </div>
+          <div class="inst">
+            <h3>macOS and Linux</h3>
+            <p>
+              Build from source for now (Node 22+, Rust, and the
+              <a href="https://tauri.app/start/prerequisites/" rel="noopener">Tauri prerequisites</a>). Prebuilt
+              packages will come once they are tested on real machines.
+            </p>
+            <div class="code">
+              <pre id="clone"><code>git clone https://github.com/rsd-06/codecritter.git
+cd codecritter
+npm ci
+npm run dist</code></pre>
+              <button type="button" class="chip" id="copy" aria-label="Copy build commands">Copy</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== OPEN SOURCE ============================== -->
+      <section class="section oss" id="open-source" aria-labelledby="oss-h">
+        <div class="oss-copy">
+          <h2 id="oss-h">Free, MIT licensed, and open to your pull request</h2>
+          <p>
+            CodeCritter is built in the open by one developer and a growing list of contributors. New characters, agent
+            integrations, translations and bug reports are all welcome. A character is just data: a few pixel grids and
+            a palette.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="https://github.com/rsd-06/codecritter" rel="noopener">Star on GitHub</a>
+            <a class="btn btn-ghost" href="https://github.com/rsd-06/codecritter/fork" rel="noopener">Fork it</a>
+          </div>
+        </div>
+        <ul class="links">
+          <li>
+            <a href="https://github.com/rsd-06/codecritter/blob/main/CONTRIBUTING.md" rel="noopener">Contributing guide</a>
+            <span>Dev setup, scripts and the browser playground.</span>
+          </li>
+          <li>
+            <a href="https://github.com/rsd-06/codecritter/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22" rel="noopener">Good first issues</a>
+            <span>Small, scoped tasks for a first contribution.</span>
+          </li>
+          <li>
+            <a href="https://github.com/rsd-06/codecritter/blob/main/docs/characters.md" rel="noopener">Make a character</a>
+            <span>Author a new critter from pixel-grid parts.</span>
+          </li>
+          <li>
+            <a href="https://github.com/rsd-06/codecritter/blob/main/docs/agents.md" rel="noopener">Add an agent</a>
+            <span>Hook formats and the loopback HTTP API.</span>
+          </li>
+          <li>
+            <a href="https://github.com/rsd-06/codecritter/blob/main/LICENSE" rel="noopener">MIT license</a>
+            <span>Use it, change it, ship it.</span>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="foot-top">
+        <div>
+          <p class="foot-title">Made by rsd-06</p>
+          <p class="fine">Say hi or follow along.</p>
+        </div>
+        <ul class="contact">
+          <li><a href="https://github.com/rsd-06" rel="noopener me">GitHub: github.com/rsd-06</a></li>
+          <li><a href="https://instagram.com/rsd.exe" rel="noopener me">Instagram: @rsd.exe</a></li>
+        </ul>
+      </div>
+      <p class="disclaimer">
+        CodeCritter is an independent, unofficial, non-commercial fan project. Stitch is a character of and copyright
+        Disney. Yoda is a character of and copyright Lucasfilm Ltd. All rights belong to their respective owners.
+        CodeCritter is not affiliated with, endorsed by or sponsored by Disney, Lucasfilm, or any of the AI-agent or
+        desktop-pet products mentioned on this page. The MIT license covers the source code only, not the third-party
+        characters it depicts.
+      </p>
+    </footer>
+
+    <div class="dock" id="dock" hidden>
+      <button type="button" class="dock-x" id="dock-x" aria-label="Hide the critter">x</button>
+    </div>
+  </body>
+</html>
