@@ -87,3 +87,10 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 ## v0.2 QA (after Tauri migration) [lead-requested by user]
 - [ ] Full end-to-end mock scenario run of every feature on the Tauri build (scripted: input bursts, scroll, cursor near/far/over, petting, drag/shake, idle→sleep, reminders, pomodoro cycle, messages, pinned note, name, peek on/off all edges, agent events for every agent, settings round-trip, export/import, tray, shortcuts) with screenshots + metrics
 - [ ] Real Claude Code integration: install hook from Settings → AI Agents (writes real ~/.claude/settings.json, with backup), run a real `claude -p` prompt, confirm thinking → done reactions, then verify uninstall restores the file
+
+## v0.2 Launch (after QA)
+- [ ] Windows installer (Tauri NSIS .exe + MSI) attached to a GitHub Release; tested install → run → uninstall on this machine
+- [ ] Landing page (single page, interactive, clean + vibrant, minimal): hero with live character demo, all features, AI agents, download button → latest release, contact details, open-source/contribute CTA; deployed on Vercel
+- [ ] Launch video via brag skill; embedded on site + README
+- [ ] Open-source hygiene: issue/PR templates, CODE_OF_CONDUCT, good-first-issue labels, Discussions on
+- [ ] Launch kit for X / Threads / Instagram (rsd.exe): post drafts, thread, reel script + captions, posting schedule; Show HN / Reddit / Product Hunt drafts (user posts)
