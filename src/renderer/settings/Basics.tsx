@@ -319,6 +319,14 @@ export const MessagesTab = memo(function MessagesTab() {
   const persistRef = useRef(persist);
   persistRef.current = persist;
   useEffect(() => () => persistRef.current(), []);
+  // Messages changed elsewhere (a 'once' message disabling itself, sync folder, import): adopt them unless
+  // we have unsaved local edits. Compared as saved rows so half-typed invalid drafts do not trigger a reset.
+  useEffect(() => {
+    if (pending.current) return;
+    if (JSON.stringify(savableMessages(listRef.current)) === JSON.stringify(settings.messages)) return;
+    listRef.current = settings.messages;
+    setList(settings.messages);
+  }, [settings.messages]);
 
   return (
     <Section title="Messages" intro="Scheduled messages your critter will say at a set time.">

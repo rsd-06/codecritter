@@ -51,9 +51,17 @@ export function App(props: { bridge: SettingsBridge; mock?: boolean }) {
   const seq = useRef(0);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const toastId = useRef(0);
+  const pending = useRef(0);
 
   useEffect(() => {
     bridge.get().then((s) => {
+      ref.current = s;
+      setSettings(s);
+    });
+    // Changes made elsewhere (tray, sync folder, import, a 'once' message disabling itself) must show up
+    // here too, otherwise the next edit starts from stale values. Ignored while our own saves are in flight.
+    return bridge.onSettings?.((s) => {
+      if (pending.current > 0) return;
       ref.current = s;
       setSettings(s);
     });
@@ -74,8 +82,10 @@ export function App(props: { bridge: SettingsBridge; mock?: boolean }) {
       ref.current = next;
       setSettings(next);
       const mine = ++seq.current;
+      pending.current++;
       bridge.set(patch).then(
         (res) => {
+          pending.current--;
           if (mine === seq.current) {
             ref.current = res;
             setSettings(res);
@@ -84,7 +94,10 @@ export function App(props: { bridge: SettingsBridge; mock?: boolean }) {
           clearTimeout(savedTimer.current);
           savedTimer.current = setTimeout(() => setSaved(false), 1500);
         },
-        () => toast('Could not save settings', false),
+        () => {
+          pending.current--;
+          toast('Could not save settings', false);
+        },
       );
     },
     [bridge, toast],

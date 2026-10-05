@@ -130,6 +130,8 @@ export interface OverlayBridge {
 export interface SettingsBridge {
   get(): Promise<Settings>;
   set(patch: Partial<Settings>): Promise<Settings>;
+  /** Settings changed elsewhere (tray, sync folder, import, a 'once' message disabling itself). Optional: the mock has none. */
+  onSettings?(cb: (s: Settings) => void): () => void;
   pomodoro(cmd: 'start' | 'pause' | 'resume' | 'skip' | 'stop'): Promise<PomodoroState>;
   /** Current pomodoro state (for tray-started sessions). */
   pomodoroState(): Promise<PomodoroState>;

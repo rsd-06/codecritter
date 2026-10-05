@@ -158,6 +158,7 @@ export interface OverlayBridge {
 // window.critterSettings (settings preload)
 export interface SettingsBridge {
   get(): Promise<Settings>; set(patch: Partial<Settings>): Promise<Settings>;
+  onSettings?(cb: (s: Settings) => void): () => void;      // optional: settings changed elsewhere (tray, sync, import)
   pomodoro(cmd: 'start'|'pause'|'resume'|'skip'|'stop'): Promise<PomodoroState>;
   pomodoroState(): Promise<PomodoroState>;                 // current state (tray-started sessions)
   onPomodoro(cb: (s: PomodoroState) => void): () => void;  // pushed on every transition (+1/s while running)
