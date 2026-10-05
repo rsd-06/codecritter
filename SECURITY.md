@@ -12,7 +12,7 @@ CodeCritter is a local desktop app. It has no accounts, no servers and no teleme
 
 **What it touches**
 
-- A global keyboard/mouse hook (`uiohook-napi`). Events are aggregated into counts and rates inside `src/main/input/monitor.ts`; key identities never leave that file and are never stored or logged.
+- A global keyboard/mouse hook (`rdev`, in the Rust shell). Events are aggregated into counts and rates inside `src-tauri/src/input/`; the hook callback never reads key identities, only that a key went down, and nothing is stored or logged.
 - A loopback HTTP server (`127.0.0.1:47626`, falls back up to +5 ports) that accepts agent status events.
 - Agent installers that edit config files of coding agents in your home directory, only when you press Install in Settings.
 - `~/.codecritter/` containing the token, port and a copy of the hook script, and `config.json` in the app data folder.

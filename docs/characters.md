@@ -76,7 +76,7 @@ Brow and eye knobs live in `EyeSpec` (`style: 'solid' | 'sclera'`, eye centres a
 
 1. Add the id to `CharacterId` in `src/shared/types.ts` and a default palette to `DEFAULT_PALETTES` in `src/shared/defaults.ts` (a settings migration is not needed for new keys that have defaults, but check `src/shared/defaults.test.ts`).
 2. Export `createMyCharRig()` and `createMyChar = (p) => createRigCharacter(createMyCharRig(), p)`; add it to `createCharacter` in `characters/index.ts`.
-3. Add its voice in `engine/sound.ts`, its personalised lines in `behavior/strings.ts`, and a tray entry in `src/main/tray.ts`.
+3. Add its voice in `engine/sound.ts`, its personalised lines in `behavior/strings.ts`, and a tray entry in `src-tauri/src/tray.rs`.
 4. Add it to the character picker (`src/renderer/settings/Character.tsx`) and to the `characters` lists in `tools/sprite-export.ts` and `tools/make_icons.py`.
 
 ## Gallery workflow

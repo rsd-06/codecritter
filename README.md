@@ -88,23 +88,23 @@ Manual setup, exact file formats, the HTTP API and troubleshooting: [docs/agents
 
 Grab the latest build for your OS from the [Releases page](https://github.com/rsd-06/codecritter/releases):
 
-- **Windows**: `CodeCritter-*-win-x64-nsis.exe` (installer, per-user) or `*-portable.exe`
-- **macOS**: `CodeCritter-*-mac-*.dmg`
+- **Windows**: `CodeCritter_*_x64-setup.exe` (installer, per-user, no admin needed; about 1.5 MB) or `CodeCritter_*_x64_en-US.msi`. The installer downloads the Microsoft WebView2 runtime only if your PC lacks it (it ships with Windows 11 and current Windows 10).
+- **macOS**: `CodeCritter_*.dmg` (universal)
 - **Linux**: `.AppImage` (`chmod +x`, run) or `.deb`
 
 > Builds are **unsigned** for now. Windows SmartScreen shows "Windows protected your PC": click **More info > Run anyway**. On macOS right-click the app, choose **Open**, then confirm (or run `xattr -dr com.apple.quarantine /Applications/CodeCritter.app`). CodeCritter is a menu-bar/tray app and has no Dock icon.
 
 ### Build from source
 
-Requires Node 22+ (and Python 3.10+ only if you regenerate image assets).
+CodeCritter is a [Tauri 2](https://tauri.app) app: a Rust shell around a TypeScript/Canvas/React front end. You need Node 22+, a stable Rust toolchain ([rustup](https://rustup.rs)), and the platform prerequisites from the [Tauri guide](https://tauri.app/start/prerequisites/) (MSVC Build Tools + WebView2 on Windows, Xcode CLT on macOS, `libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev libxtst-dev` on Debian/Ubuntu). Python 3.10+ is only needed to regenerate image assets.
 
 ```sh
 git clone https://github.com/rsd-06/codecritter.git
 cd codecritter
 npm ci
-npm run dev            # run the app with hot reload
-npm run dist           # installers for your OS in release/
-npm run dist -- --win --dir   # unpacked build only (fast)
+npm run dev            # tauri dev: the app with hot reload
+npm run dist           # tauri build: installers in <target>/release/bundle/ (nsis + msi on Windows)
+npm run test:rust      # Rust unit tests
 ```
 
 Regenerate icons, tray images and README media from the character definitions (needs a Python venv with Pillow):
@@ -114,6 +114,7 @@ python -m venv .venv
 .venv\Scripts\pip install -r tools\requirements.txt      # Windows (use .venv/bin/pip on macOS/Linux)
 npm run sprites:export                                    # render frames with the real engine
 .venv\Scripts\python.exe tools\make_icons.py              # icons, tray PNGs, docs/media
+npx tauri icon build/icon.png                             # regenerate src-tauri/icons
 ```
 
 ## Usage
@@ -122,14 +123,14 @@ npm run sprites:export                                    # render frames with t
 - **Right-click the critter** for the same menu. **Drag** it anywhere; its position is remembered per monitor.
 - **Shortcuts** (global): `Ctrl/Cmd+Alt+P` toggle peek, `Ctrl/Cmd+Alt+H` hide/show, `Ctrl/Cmd+Alt+S` open Settings.
 - **Settings window**: character and colours, reactions, reminders, Pomodoro, messages, pinned note, agents, general (name, size, opacity, sound, autostart, do-not-disturb, peek, sync).
-- **Config file**: `config.json` in the app data folder: `%APPDATA%\CodeCritter\config.json` on Windows, `~/Library/Application Support/CodeCritter/config.json` on macOS, `~/.config/CodeCritter/config.json` on Linux. The agent token and port live in `~/.codecritter/`.
+- **Config file**: `settings.json` in the app config folder: `%APPDATA%\dev.codecritter.app\settings.json` on Windows, `~/Library/Application Support/dev.codecritter.app/settings.json` on macOS, `~/.config/dev.codecritter.app/settings.json` on Linux. The agent token and port live in `~/.codecritter/`.
 
 ## Privacy
 
 Privacy is a feature, not a footnote.
 
 - **No telemetry, no analytics, no outbound network.** The app never phones home and has no auto-update ping.
-- **Keystrokes are never recorded.** The global input hook is aggregated in the main process into counts and rates (keys per second, scroll delta, mouse speed). Key identities never leave that one file and are never stored or logged.
+- **Keystrokes are never recorded.** The global input hook is aggregated in the Rust shell into counts and rates (keys per second, scroll delta, mouse speed). Key identities never leave the input hook and are never stored or logged.
 - **Loopback only.** The agent endpoint binds to `127.0.0.1`, requires a random per-install token, rejects browser requests, and is rate limited. Events can only animate the critter.
 - Agent messages (for speech bubbles) are shown and discarded; they are not stored.
 
@@ -137,15 +138,18 @@ See [SECURITY.md](SECURITY.md) for the threat model.
 
 ## Performance
 
-Efficiency is a design goal: no animation loop while idle (a dirty-flag scheduler redraws ~1-2 times per second at rest and at most ~12 fps while animating), hardware acceleration off by default, adaptive cursor polling, and the Settings window is destroyed when closed. Measured on a Windows 11 box with the packaged build (idle, overlay visible, normal desktop use):
+Efficiency is a design goal: no animation loop while idle (a dirty-flag scheduler redraws ~1-2 times per second at rest and at most ~12 fps while animating), software rendering with a single WebView2 renderer process, adaptive cursor polling, and the Settings window is destroyed when closed. The Rust shell uses a few MB on its own. Measured on a Windows 11 box with the **release build installed from the NSIS installer** (idle, overlay visible, about 20 s after launch):
 
 | Metric | Result |
 | --- | --- |
+| Installer size | NSIS 1.5 MB, MSI 2.1 MB |
 | CPU (idle) | ~0.0% |
-| Working set | ~190-220 MB (browser ~115-131 MB + overlay renderer ~77-89 MB). This counts shared Electron/Chromium DLL pages; a bare Electron app with one transparent window measures 206 MB the same way, so CodeCritter adds only ~12 MB. Private (unshared) memory is ~110 MB. |
+| Private working set (the Task Manager "Memory" column, app + WebView2 processes) | ~60 MB |
+| Private bytes (committed, unshared) | ~91 MB |
+| Total working set (counts shared WebView2/Chromium DLL pages) | ~280 MB across 6 processes (the Electron build measured ~190-220 MB with the same method, but ~110 MB private) |
 | Idle redraws | ~1.2-1.4 per second (0.8 while asleep) |
 
-Honest note: the memory figure is above our 150 MB aspiration, which is close to the floor for an Electron app. `CRITTER_METRICS=1` prints these numbers, `CRITTER_GPU=1` re-enables GPU acceleration.
+Honest note: the WebView2 runtime is shared with Edge and other apps, so the shared-page "working set" is larger than Electron's even though real (private) memory is roughly half. `CRITTER_DEBUG=1` prints input/reminder diagnostics.
 
 ## Roadmap
 
@@ -153,7 +157,7 @@ Honest note: the memory figure is above our 150 MB aspiration, which is close to
 - More built-in characters and a drop-in character pack loader
 - Per-monitor and per-app behaviour rules
 - Localised strings (the text layer is already i18n-ready)
-- Idle CPU/memory polish and a lighter shell investigation
+- macOS/Linux peek detection (fullscreen heuristics) parity with Windows
 
 ## Contributing
 

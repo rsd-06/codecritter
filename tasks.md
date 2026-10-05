@@ -82,7 +82,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] T2a Input (rdev) + cursor + peek
 - [x] T2b Agents server + installers (Rust) + tests
 - [x] T2c Scheduler + pomodoro + sync (Rust) + tests
-- [ ] T3 Ship: bundles, CI, release workflow, remove Electron, docs, final metrics
+- [x] T3 Ship: bundles (NSIS 1.5 MB + MSI 2.1 MB), CI (cargo test on 3 OSes), tauri-action draft release workflow, Electron removed, docs, release metrics
 
 ## v0.2 QA (after Tauri migration) [lead-requested by user]
 - [ ] Full end-to-end mock scenario run of every feature on the Tauri build (scripted: input bursts, scroll, cursor near/far/over, petting, drag/shake, idle→sleep, reminders, pomodoro cycle, messages, pinned note, name, peek on/off all edges, agent events for every agent, settings round-trip, export/import, tray, shortcuts) with screenshots + metrics

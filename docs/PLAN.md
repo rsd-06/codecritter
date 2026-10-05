@@ -35,16 +35,18 @@ GitHub Copilot (VS Code via extension-less generic hook / CLI), OpenCode, Devin/
 
 ## 2. Tech stack
 
-- **Electron 3x + TypeScript** via **electron-vite** (main / preload / renderer bundles)
-- **Renderer**: Canvas 2D, zero-framework for the overlay (perf); **React 18** for the settings window
-- **Global input**: `uiohook-napi` (prebuilt N-API binaries; Win/mac/Linux). Fallback: cursor polling only
-- **Peek detection**: `get-windows` (optional dependency; fullscreen foreground window heuristic)
-- **Persistence**: `electron-store` (JSON in userData)
-- **Packaging**: `electron-builder` (NSIS + portable for Win, dmg for mac, AppImage/deb for Linux)
-- **Tests**: `vitest` (unit: state machine, scheduler, installers, server, sprite compiler)
-- **Asset tooling**: Python venv (`.venv`, Pillow) in `tools/` → app icons (.png/.ico/.icns), sprite-sheet
+- **Tauri 2 (Rust shell) + TypeScript front end** (Vite; the original Electron shell is preserved at git tag `electron-final`, see [TAURI_PLAN.md](TAURI_PLAN.md))
+- **Renderer**: Canvas 2D, zero-framework for the overlay (perf); **React** for the settings window
+- **Global input**: `rdev` (Win/mac/Linux). Only counts and rates leave the hook thread. Fallback: cursor polling only
+- **Peek detection**: Windows `SHQueryUserNotificationState`; mac/linux: none yet
+- **Persistence**: JSON file in the app config dir (`store.rs`), deep-merged with embedded defaults
+- **Packaging**: `tauri build` (NSIS + MSI for Windows, dmg/app for macOS, AppImage/deb for Linux), unsigned
+- **Tests**: `vitest` (behaviour state machine, sprite compiler, shared contract) + `cargo test` (agents server and installers, scheduler, input aggregation, sync)
+- **Asset tooling**: Python venv (`.venv`, Pillow) in `tools/` for app icons (.png/.ico/.icns), sprite-sheet
   previews/GIFs for README, rendered from the same sprite definitions (JSON exported by `npm run sprites:export`)
-- **CI**: GitHub Actions (lint, typecheck, test on 3 OSes; release builds on tag)
+- **CI**: GitHub Actions (typecheck, vitest, lint, `cargo test` on 3 OSes; tauri-action draft release on tag)
+
+> Sections 3 onward describe the original Electron layout; the Rust modules that replaced `src/main` are mapped in TAURI_PLAN.md. The `window.critter` contracts in section 4 are now implemented by `src/renderer/tauri-bridge.ts`.
 
 ## 3. Architecture
 

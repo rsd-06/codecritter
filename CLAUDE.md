@@ -1,14 +1,14 @@
 # CLAUDE.md
 
-CodeCritter: open-source pixel desktop companion (Stitch & Yoda) for developers. Electron + TypeScript.
+CodeCritter: open-source pixel desktop companion (Stitch & Yoda) for developers. Tauri 2 (Rust shell) + TypeScript front end. (The old Electron shell is at git tag `electron-final`.)
 
 - **Spec & contracts:** `docs/PLAN.md` (§4 is the binding contract for `src/shared`). **Progress:** `tasks.md`. **Decisions/gotchas:** `MEMORY.md`.
-- Commands: `npm run dev` (Electron app) · `npm run playground` (overlay in browser with mock bridge, http://localhost:5174) · `npm test` · `npm run typecheck` · `npm run lint` · `npm run build` · `npm run dist`.
-- Disk: C: is nearly full. Set TEMP/TMP=D:/dev-cache/tmp, ELECTRON_CACHE/ELECTRON_BUILDER_CACHE under D:/dev-cache before npm/electron/tests. Never dump large recursive listings.
+- Commands: `npm run dev` (tauri dev) · `npm run playground` (overlay in browser with mock bridge, http://localhost:5174) · `npm test` (vitest) · `npm run test:rust` (cargo test; needs `npm run build` first) · `npm run typecheck` · `npm run lint` · `npm run build` (front end -> dist-tauri) · `npm run dist` (tauri build: NSIS + MSI on Windows).
+- Disk: C: is nearly full. In EVERY shell set `RUSTUP_HOME=D:\dev-tools\rustup`, `CARGO_HOME=D:\dev-tools\cargo`, `CARGO_TARGET_DIR=D:\dev-cache\cargo-target`, `TEMP=TMP=D:\dev-cache\tmp`, `npm_config_cache=D:\dev-cache\npm`, and put `D:\dev-tools\cargo\bin` on PATH. Never dump large recursive listings.
 - Python tooling: use `.venv\Scripts\python.exe` (Windows) / `.venv/bin/python`; scripts live in `tools/`.
-- Process boundaries: main (`src/main`) ↔ preload (`src/preload`) ↔ renderer (`src/renderer`). Renderer never imports Node/Electron; it only uses `window.critter` / `window.critterSettings`.
-- Overlay renderer must run in a plain browser (playground) — keep all Electron access behind `bridge.ts`.
-- Behaviour logic is pure TS (no DOM) and unit-tested. Agent installers take a `home` dir param for testability.
+- Process boundaries: Rust shell (`src-tauri/src`) ↔ webview renderer (`src/renderer`) over Tauri commands/events (`src/renderer/tauri-bridge.ts`, contract in `src/shared`). Renderer never imports Node/Tauri outside the bridge files.
+- Overlay renderer must run in a plain browser (playground) — keep all Tauri access behind `bridge.ts` / `tauri-bridge.ts`.
+- Behaviour logic is pure TS (no DOM) and unit-tested. Agent installers (Rust, `src-tauri/src/agents`) take a `home` dir param for testability.
 - Privacy is a feature: never log/store key identities, only counts. No telemetry, no outbound network.
 - Pixel art: 64×64 logical canvas, integer scaling, `imageSmoothingEnabled = false`.
 - Commit style: conventional commits, scoped (`feat(engine):`, `fix(agents):`). Commit only files you own (see tasks.md). Run `npm run typecheck && npm test` first.

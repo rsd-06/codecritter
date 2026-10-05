@@ -31,7 +31,11 @@ const WEBVIEW2_ARGS: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScree
 /// Without it WebView2 would create `<exe>.WebView2` next to the executable (inside the install dir).
 #[cfg(windows)]
 fn webview_data_dir(app: &AppHandle) -> Option<std::path::PathBuf> {
-    app.path().app_local_data_dir().ok().map(|d| d.join("webview"))
+    let d = app.path().app_local_data_dir();
+    if std::env::var_os("CRITTER_DEBUG").is_some() {
+        eprintln!("[windows] webview data dir: {d:?}");
+    }
+    d.ok().map(|d| d.join("webview"))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
