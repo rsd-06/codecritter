@@ -232,8 +232,11 @@ p {
   text-decoration: none;
   margin-right: auto;
 }
-.brand img {
-  image-rendering: pixelated;
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 32px;
+  overflow: visible;
 }
 .nav nav {
   display: flex;
@@ -251,9 +254,6 @@ p {
 @media (max-width: 760px) {
   .nav nav {
     display: none;
-  }
-  .brand span {
-    font-size: 0.9rem;
   }
 }
 
@@ -789,9 +789,6 @@ main {
 @media (max-width: 480px) {
   .nav {
     gap: 10px;
-  }
-  .brand span {
-    font-size: 0.8rem;
   }
   .btn-small {
     padding: 0 10px;
