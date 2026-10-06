@@ -11,5 +11,5 @@ CodeCritter: open-source pixel desktop companion (Stitch & Yoda) for developers.
 - Behaviour logic is pure TS (no DOM) and unit-tested. Agent installers (Rust, `src-tauri/src/agents`) take a `home` dir param for testability.
 - Privacy is a feature: never log/store key identities, only counts. No telemetry, no outbound network.
 - Pixel art: 64×64 logical canvas, integer scaling, `imageSmoothingEnabled = false`.
-- Commit style: conventional commits, scoped (`feat(engine):`, `fix(agents):`). Commit only files you own (see tasks.md). Run `npm run typecheck && npm test` first.
+- Commit style: conventional commits, scoped (`feat(engine):`, `fix(agents):`). Never add Co-Authored-By or any AI attribution lines; the maintainer is the sole author. Commit only files you own (see tasks.md). Run `npm run typecheck && npm test` first.
 - Update `tasks.md` checkboxes when you finish an item; add non-obvious decisions to `MEMORY.md`.
