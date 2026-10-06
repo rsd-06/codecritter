@@ -1,0 +1,14 @@
+{
+  "name": "CodeCritter",
+  "short_name": "CodeCritter",
+  "description": "Free, open-source pixel desktop pet for developers that reacts to your typing and your AI coding agents.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f8ff",
+  "theme_color": "#f5f8ff",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -1034,3 +1034,30 @@ main {
     min-height: 96px;
   }
 }
+
+/* ---------- FAQ ---------- */
+.faq-list {
+  display: grid;
+  gap: 12px;
+  max-width: 78ch;
+}
+.faq-item {
+  border: 2px solid var(--ink);
+  background: var(--surface);
+  padding: 14px 18px;
+}
+.faq-item summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.faq-item summary:focus-visible {
+  outline: 3px solid var(--glow);
+  outline-offset: 4px;
+}
+.faq-item p {
+  margin-top: 10px;
+  color: var(--muted);
+}
+.faq-item[open] {
+  box-shadow: 6px 6px 0 var(--glow);
+}

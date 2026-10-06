@@ -6,7 +6,7 @@
 Outputs:
     site/public/logo-mark.svg  logo.svg (mark + wordmark)
     site/public/favicon-16.png favicon-32.png apple-touch-icon.png icon-512.png
-    site/public/media/og.png (1200x630, both characters + new logo)
+    site/public/media/og.png + og-download.png (1200x630, both characters + new logo), icon-192.png
     docs/media/logo-yoda.png (README)
 
 The mark is a 32x32 grid designed as the left half + mirror (so it is always symmetric); a hand-tuned 16x16
@@ -466,6 +466,41 @@ def og_image() -> Image.Image:
     return im
 
 
+def og_download_image() -> Image.Image:
+    """1200x630 card for /download: Yoda logo mark + title on the left, both characters on a dusk plate."""
+    W, H = 1200, 630
+    im = Image.new("RGBA", (W, H), (245, 248, 255, 255))
+    d = ImageDraw.Draw(im)
+    for y in range(8, H, 24):
+        for x in range(8, W, 24):
+            d.rectangle([x, y, x + 1, y + 1], fill=(214, 224, 247, 255))
+    ink = INK + (255,)
+    lk = lockup("A", 4)
+    im.alpha_composite(lk, (50, 70))
+    d.text((74, 70 + lk.height + 36), "Download CodeCritter", font=font(54), fill=ink)
+    d.text((74, 70 + lk.height + 108), "Free pixel desktop companion", font=font(34, False), fill=(71, 83, 128, 255))
+    d.text((74, 70 + lk.height + 152), "for developers and AI coding agents.", font=font(34, False), fill=(71, 83, 128, 255))
+    # platform pills
+    x = 74
+    for label in ("Windows", "macOS", "Linux"):
+        f = font(28)
+        w = int(d.textlength(label, font=f)) + 44
+        d.rectangle([x + 5, 470 + 5, x + w + 5, 470 + 56 + 5], fill=ink)
+        d.rectangle([x, 470, x + w, 470 + 56], fill=(47, 98, 176, 255), outline=ink, width=3)
+        d.text((x + 22, 470 + 9), label, font=f, fill=(255, 255, 255, 255))
+        x += w + 28
+    d.text((74, 565), "Free and open source  |  MIT", font=font(24, False), fill=(71, 83, 128, 255))
+    px0, py0, pw, ph = 770, 55, 382, 520
+    d.rectangle([px0 + 10, py0 + 10, px0 + pw + 10, py0 + ph + 10], fill=(63, 127, 217, 255))
+    im.alpha_composite(dusk_plate(pw, ph, 3), (px0, py0))
+    d.rectangle([px0, py0, px0 + pw, py0 + ph], outline=ink, width=3)
+    for c, cx in (("stitch", px0 + 96), ("yoda", px0 + 276)):
+        spr = Image.open(OUT / c / "expr" / "happy.png").convert("RGBA")
+        spr = up(spr.crop(spr.getbbox()), 3)
+        im.alpha_composite(spr, (cx - spr.width // 2, py0 + ph - 30 - spr.height + 6))
+    return im
+
+
 def write_all() -> None:
     PUB.mkdir(parents=True, exist_ok=True)
     (PUB / "logo-mark.svg").write_text(svg_mark("A"), encoding="utf8")
@@ -482,6 +517,12 @@ def write_all() -> None:
     ic.alpha_composite(b, ((512 - b.width) // 2, (512 - b.height) // 2))
     ic.save(PUB / "icon-512.png", optimize=True)
     og_image().convert("RGB").save(PUB / "media" / "og.png", optimize=True)
+    og_download_image().convert("RGB").save(PUB / "media" / "og-download.png", optimize=True)
+    # 192 icon for the web manifest: same navy badge, 5x
+    b192 = up(mark("B"), 5)
+    i192 = Image.new("RGBA", (192, 192), (0, 0, 0, 0))
+    i192.alpha_composite(b192, ((192 - b192.width) // 2, (192 - b192.height) // 2))
+    i192.save(PUB / "icon-192.png", optimize=True)
     # README mark: transparent mark + wordmark lockup
     lockup("A", 8).save(MEDIA / "logo-yoda.png", optimize=True)
 

@@ -3,35 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CodeCritter | A pixel desktop companion for developers</title>
-    <meta
-      name="description"
-      content="CodeCritter is a free, open-source pixel companion that lives on your desktop and reacts to your typing, your cursor and your AI coding agents. Windows installer 1.5 MB, MIT."
-    />
-    <meta name="theme-color" content="#f5f8ff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0c1230" media="(prefers-color-scheme: dark)" />
-    <link rel="canonical" href="https://codecritter.vercel.app/" />
+    <title>CodeCritter: Free Pixel Desktop Pet for Developers</title>
+    <meta name="description" content="Free, open-source pixel desktop pet for developers. It reacts to your typing and to AI coding agents like Claude Code and Codex. Windows, macOS, Linux." />
     <link rel="icon" type="image/svg+xml" href="/logo-mark.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="application-name" content="CodeCritter" />
+    <meta name="author" content="rsd-06" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f5f8ff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c1230" media="(prefers-color-scheme: dark)" />
+    <link rel="canonical" href="%SITE_URL%/" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://codecritter.vercel.app/" />
-    <link rel="canonical" href="https://codecritter.vercel.app/" />
-    <meta property="og:title" content="CodeCritter: a pixel companion for your desktop and your AI agents" />
-    <meta
-      property="og:description"
-      content="Reacts to your typing, your cursor and Claude Code, Codex, Cursor, Gemini and more. Free, open source, 1.5 MB."
-    />
-    <meta property="og:image" content="https://codecritter.vercel.app/media/og.png" />
+    <meta property="og:site_name" content="CodeCritter" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="CodeCritter: Free Pixel Desktop Pet for Developers" />
+    <meta property="og:description" content="A pixel desktop companion that reacts to your typing, your cursor and AI coding agents such as Claude Code, Codex, Cursor and Gemini CLI. Free and open source." />
+    <meta property="og:url" content="%SITE_URL%/" />
+    <meta property="og:image" content="%SITE_URL%/media/og.png" />
+    <meta property="og:image:secure_url" content="%SITE_URL%/media/og.png" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Pixel art Stitch and Yoda next to the CodeCritter name" />
+    <meta property="og:image:alt" content="Pixel art Stitch and Yoda desktop pets next to the CodeCritter logo" />
+    <meta property="og:video" content="%SITE_URL%/media/launch.mp4" />
+    <meta property="og:video:secure_url" content="%SITE_URL%/media/launch.mp4" />
+    <meta property="og:video:type" content="video/mp4" />
+    <meta property="og:video:width" content="1920" />
+    <meta property="og:video:height" content="1080" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="CodeCritter: a pixel companion for your desktop and your AI agents" />
-    <meta name="twitter:description" content="Free, open source, 1.5 MB. Reacts to your typing, cursor and AI coding agents." />
-    <meta name="twitter:image" content="https://codecritter.vercel.app/media/og.png" />
+    <meta name="twitter:title" content="CodeCritter: Free Pixel Desktop Pet for Developers" />
+    <meta name="twitter:description" content="Free, open-source pixel desktop pet that reacts to your typing and your AI coding agents, Claude Code included." />
+    <meta name="twitter:image" content="%SITE_URL%/media/og.png" />
+    <meta name="twitter:image:alt" content="Pixel art Stitch and Yoda desktop pets next to the CodeCritter logo" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -39,6 +47,80 @@
       href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700&family=Silkscreen:wght@400;700&display=swap"
       rel="stylesheet"
     />
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "%SITE_URL%/#website",
+      "url": "%SITE_URL%/",
+      "name": "CodeCritter",
+      "description": "Free, open-source pixel desktop pet for developers.",
+      "inLanguage": "en",
+      "publisher": {
+        "@id": "%SITE_URL%/#author"
+      }
+    },
+    {
+      "@type": "Person",
+      "@id": "%SITE_URL%/#author",
+      "name": "rsd-06",
+      "url": "https://github.com/rsd-06",
+      "sameAs": [
+        "https://github.com/rsd-06",
+        "https://www.instagram.com/rsd_exe/"
+      ]
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "%SITE_URL%/#software",
+      "name": "CodeCritter",
+      "alternateName": "CodeCritter desktop pet",
+      "description": "CodeCritter is a free, open-source pixel-art desktop pet and companion for developers. It lives on your desktop, reacts to your typing and cursor, and follows AI coding agents such as Claude Code, Codex CLI, Cursor and Gemini CLI. It counts keystrokes but never records which keys you press.",
+      "url": "%SITE_URL%/",
+      "applicationCategory": "DeveloperApplication",
+      "applicationSubCategory": "Desktop pet",
+      "operatingSystem": "Windows 10, Windows 11, macOS, Linux",
+      "softwareVersion": "%VERSION%",
+      "fileSize": "%FILE_SIZE%",
+      "downloadUrl": "%SITE_URL%/download",
+      "installUrl": "https://github.com/rsd-06/codecritter/releases/latest",
+      "releaseNotes": "https://github.com/rsd-06/codecritter/releases/latest",
+      "image": "%SITE_URL%/media/og.png",
+      "screenshot": [
+        "%SITE_URL%/media/gallery-yoda.png",
+        "%SITE_URL%/media/gallery-stitch.png"
+      ],
+      "license": "https://github.com/rsd-06/codecritter/blob/main/LICENSE",
+      "isAccessibleForFree": true,
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "featureList": [
+        "Reacts to typing, scrolling and cursor movement",
+        "Follows Claude Code, Codex CLI, Cursor, Gemini CLI and other AI coding agents",
+        "Stretch, water and Pomodoro reminders",
+        "Peek mode hides it during fullscreen apps and videos",
+        "Stitch and Yoda pixel-art characters with recolouring"
+      ],
+      "author": {
+        "@id": "%SITE_URL%/#author"
+      },
+      "creator": {
+        "@id": "%SITE_URL%/#author"
+      },
+      "sameAs": [
+        "https://github.com/rsd-06/codecritter"
+      ]
+    },
+    %FAQ_JSONLD%
+  ]
+}
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
@@ -70,7 +152,7 @@
             <a class="btn btn-ghost" href="https://github.com/rsd-06/codecritter" rel="noopener">Star on GitHub</a>
           </div>
           <p class="fine">
-            1.5 MB installer. Free and open source under the MIT license. macOS and Linux beta builds are on the
+            2.1 MB installer. Free and open source under the MIT license. macOS and Linux beta builds are on the
             <a href="/download">download page</a>, or
             <a href="https://github.com/rsd-06/codecritter/releases/latest" rel="noopener">get it on GitHub</a>.
           </p>
@@ -369,12 +451,12 @@
           <h2 id="privacy-h">Private and tiny</h2>
           <ul class="flist plain">
             <li><b>Counts, not content.</b> Keystrokes become a rate. Key identities never leave the input hook and are never stored.</li>
-            <li><b>No telemetry, no network.</b> No analytics, no update ping. The agent endpoint only listens on your own machine and rejects browser requests.</li>
+            <li><b>No telemetry, no accounts.</b> The only network request is the optional, signature-verified update check, and you can turn it off. The agent endpoint only listens on your own machine and rejects browser requests.</li>
             <li><b>Quiet when idle.</b> It redraws about once a second at rest, and only while animating otherwise.</li>
           </ul>
         </div>
         <dl class="stats" aria-label="Measured on Windows 11, release build, idle">
-          <div><dt>Installer</dt><dd>1.5 MB</dd></div>
+          <div><dt>Installer</dt><dd>2.1 MB</dd></div>
           <div><dt>Memory in Task Manager</dt><dd>~55 MB</dd></div>
           <div><dt>CPU at idle</dt><dd>~1%</dd></div>
           <p class="fine">
@@ -421,6 +503,38 @@ npm run dist</code></pre>
         </div>
       </section>
 
+      <!-- ============================== FAQ ============================== -->
+      <section class="section faq" id="faq" aria-labelledby="faq-h">
+        <div class="section-head">
+          <h2 id="faq-h">Questions people ask</h2>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>Is CodeCritter free?</summary>
+            <p>Yes. CodeCritter is free and open source under the MIT license, with no account, no ads and no paid tier. The MIT license covers the source code only, not the third-party characters it depicts.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Does CodeCritter record what I type?</summary>
+            <p>No. It counts keystrokes to work out how fast you are typing, but key identities never leave the input hook and are never stored or logged. There is no telemetry.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Which AI coding agents work with it?</summary>
+            <p>One-click hook install is built in for Claude Code, Codex CLI, Cursor, Gemini CLI, Antigravity, Kiro, GitHub Copilot CLI and OpenCode. Devin and any other tool can send events with a single curl call to the local endpoint on your machine.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Will it slow my PC down?</summary>
+            <p>No. On Windows 11 a release build uses about 55 MB in Task Manager and about 1% of one CPU core at idle. It redraws about once a second at rest and only animates when something happens.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How do updates work?</summary>
+            <p>CodeCritter checks GitHub Releases for a signed update, installs it only after the signature matches, and applies it when you are idle or when you quit. This update check is the only network request the app makes, and you can turn it off in Settings.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Is there a version for Mac and Linux?</summary>
+            <p>Yes. Beta builds for macOS (a universal disk image) and Linux (an AppImage and a .deb) are on the download page. They are untested on real machines so far, so feedback is very welcome. Windows 10 and 11 is the fully tested platform.</p>
+          </details>
+        </div>
+      </section>
       <!-- ============================== OPEN SOURCE ============================== -->
       <section class="section oss" id="open-source" aria-labelledby="oss-h">
         <div class="oss-copy">
