@@ -4,7 +4,7 @@
   "installCommand": "npm ci --ignore-scripts",
   "buildCommand": "npm run site:build",
   "outputDirectory": "site/dist",
-  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- site src/renderer src/shared docs/media package.json package-lock.json vercel.json",
+  "ignoreCommand": "git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- site src/renderer src/shared docs/media package.json package-lock.json vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [
