@@ -52,7 +52,7 @@ Two characters ship in the box: **Stitch** and **Yoda** (unofficial fan art, see
 | 17 | Settings sync | Export/import settings, or point at a sync folder to share them across machines |
 | 18 | Peek mode | Hides at a screen edge and peeks out while fullscreen apps, videos and games are up, including browser F11 fullscreen; only reminders break through |
 
-Extras: 18 expression presets per character, sleeps when you go idle, synthesised sounds (chirps for Stitch, hums for Yoda) with volume, scale 1-4x, opacity, do-not-disturb hours, multi-monitor aware, global shortcuts, autostart, quiet by design.
+Extras: 18 expression presets per character, sleeps when you go idle, synthesised mechanical-keyboard style sounds (clacks for typing, agents and clicks; soft chimes for reminders that repeat louder until you react; a bell for Pomodoro; chirps for Stitch, hums for Yoda) with volume and per-category toggles, automatic signed updates (can be turned off), scale 1-4x, opacity, do-not-disturb hours, multi-monitor aware, global shortcuts, autostart, quiet by design.
 
 ## Characters
 

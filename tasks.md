@@ -105,3 +105,10 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] Eye tracking: per-eye mapping from real eye screen positions (behavior/look.ts + tests), convergence, symmetric rounding, critically damped smoothing, peek rotation, irises clipped to eye whites
 - [x] Regenerated sprites, icons, tray, README media
 - [x] Final handoff: after QA + release are verified and published, copy the published Windows installer (NSIS .exe, + .msi) to C:\Users\rsudh\Downloads\Installers for the user to install manually (check C: free space first; installer is ~1.5 MB)
+
+## v0.2.1 patch
+- [x] Auto peek detects browser F11 fullscreen (foreground-window geometry; maximised windows, including with an auto-hide taskbar, do not count)
+- [x] Signed auto-update (updater + process plugins, idle/quit install, Updated bubble, settings + tray)
+- [x] Scroll fix: exact wheel hook (small touchpad deltas), direction-aware paper, speed scaling
+- [x] Sound redesign + autoplay fix, click frenzy, escalating reminders, per-category toggles
+- [ ] Release v0.2.1: version bumped; tag and publish the draft so latest.json goes live (maintainer)
