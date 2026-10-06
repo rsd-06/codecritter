@@ -1,6 +1,7 @@
 // Landing page: runs the REAL overlay engine (src/renderer/overlay) on a canvas with a mock bridge,
 // and feeds it page input the same way the desktop app feeds it OS input.
 import './style.css';
+import './analytics';
 import { DEFAULT_SETTINGS } from '@shared/defaults';
 import type { AgentEvent, AgentId, CharacterId, ReminderKind, Settings } from '@shared/types';
 import { MockBridge } from '../../src/renderer/overlay/bridge';
@@ -18,6 +19,7 @@ const bridge = new MockBridge();
 const settings: Settings = structuredClone(DEFAULT_SETTINGS);
 settings.sound = { enabled: false, volume: 0.5 };
 settings.scale = 4;
+settings.character = 'yoda'; // the site leads with Yoda (the logo character)
 bridge.settings = settings;
 const overlay = startOverlay(bridge, { canvas, settings });
 

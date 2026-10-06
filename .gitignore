@@ -17,3 +17,6 @@ site/node_modules/
 
 # brag launch video output
 brag-output*/
+.vercel
+
+.vercel

@@ -1,9 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "npm ci --prefix .. --ignore-scripts",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "installCommand": "npm ci --ignore-scripts",
+  "buildCommand": "npm run site:build",
+  "outputDirectory": "site/dist",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- site src/renderer src/shared docs/media package.json package-lock.json vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [

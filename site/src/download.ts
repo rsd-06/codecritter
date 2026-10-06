@@ -2,6 +2,7 @@
 // GitHub API (names contain the version) and points every button at the stable
 // releases/latest/download/<name> URL. Without the API the buttons keep their static releases/latest link.
 import './style.css';
+import './analytics';
 import { OS_NAMES, currentOs, type Os } from './os';
 
 const REPO = 'rsd-06/codecritter';
