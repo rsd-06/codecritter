@@ -4,23 +4,39 @@
   "installCommand": "npm ci --ignore-scripts",
   "buildCommand": "npm run site:build",
   "outputDirectory": "site/dist",
-  "ignoreCommand": "git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- site src/renderer src/shared docs/media package.json package-lock.json vercel.json",
+  "ignoreCommand": "git cat-file -e \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}^{commit}\" 2>/dev/null && git diff --quiet \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\" HEAD -- site src/renderer src/shared docs/media package.json package-lock.json vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [
     {
       "source": "/assets/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
       "source": "/media/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000"
+        }
+      ]
     },
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
       ]
     }
   ]
