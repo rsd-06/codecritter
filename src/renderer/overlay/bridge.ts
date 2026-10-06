@@ -87,6 +87,7 @@ export class MockBridge implements OverlayBridge {
       keyBurst: false,
       scrollDelta: 0,
       mouseSpeed: 0,
+      clicksPerSec: 0,
       idleMs: 0,
       ...s,
     });

@@ -20,12 +20,16 @@ export interface AgentEvent {
   ts: number;
 }
 
+/** Sound groups with their own toggle in Settings > General. */
+export type SoundCategory = 'typing' | 'agents' | 'reminders' | 'pomodoro' | 'other';
+
 export interface InputSample {
   // emitted ~10 Hz by main, aggregated
   keysPerSec: number;
   keyBurst: boolean; // keyBurst=true if any key in last 150ms
   scrollDelta: number; // sum of wheel rotation since last sample (+down)
   mouseSpeed: number; // px/s, global
+  clicksPerSec: number; // mouse button presses in the last second (a count; never which button)
   idleMs: number; // ms since last any input
 }
 export interface CursorSample {
@@ -71,7 +75,7 @@ export interface Settings {
   scale: 1 | 2 | 3 | 4;
   opacity: number;
   position: { displayId: number; x: number; y: number } | null;
-  sound: { enabled: boolean; volume: number };
+  sound: { enabled: boolean; volume: number; categories: Record<SoundCategory, boolean> };
   reactions: {
     eyeFollow: boolean;
     hunt: boolean;

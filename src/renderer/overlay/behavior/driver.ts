@@ -57,6 +57,9 @@ export class OverlayDriver implements Tickable {
   handlePeek(on: boolean): void {
     this.brain.handlePeek(on);
   }
+  acknowledge(): void {
+    this.brain.acknowledge();
+  }
   dragStart(): void {
     this.brain.dragStart();
   }

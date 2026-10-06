@@ -7,6 +7,7 @@ import { createCharacter } from './characters';
 import { OverlayDriver } from './behavior/driver';
 import { Scheduler } from './engine/scheduler';
 import { SoundEngine } from './engine/sound';
+import type { SoundName } from './engine/soundPlan';
 import { Stage } from './engine/stage';
 
 export interface OverlayHandle {
@@ -52,7 +53,13 @@ export function startOverlay(
     lastKey = key;
     if (s.scale !== prev.scale) stage.setScale(s.scale);
     canvas.style.opacity = String(s.opacity);
-    sound.configure({ enabled: s.sound.enabled, volume: s.sound.volume, character: s.character });
+    sound.configure({
+      enabled: s.sound.enabled,
+      volume: s.sound.volume,
+      character: s.character,
+      categories: s.sound.categories,
+      dnd: s.dnd,
+    });
     driver.applySettings(s);
   };
   applySettings(initial);
@@ -70,6 +77,7 @@ export function startOverlay(
     bridge.onPomodoro((p) => driver.handlePomodoro(p)),
     bridge.onPeek((p) => {
       peeking = p;
+      sound.configure({ peeking: p });
       driver.handlePeek(p);
     }),
   ];
@@ -111,6 +119,7 @@ export function startOverlay(
   };
   const onDown = (e: PointerEvent): void => {
     if (e.button !== 0 || !stage.hitTest(e.clientX, e.clientY)) return;
+    driver.acknowledge(); // clicking the critter (or its bubble) acknowledges a repeating reminder
     if (!current.reactions.drag || peeking) return;
     dragging = true;
     last = { x: e.screenX, y: e.screenY };
@@ -131,7 +140,10 @@ export function startOverlay(
   };
   const onContext = (e: MouseEvent): void => {
     e.preventDefault();
-    if (stage.hitTest(e.clientX, e.clientY)) bridge.showContextMenu();
+    if (stage.hitTest(e.clientX, e.clientY)) {
+      driver.acknowledge();
+      bridge.showContextMenu();
+    }
   };
   document.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerdown', onDown);
@@ -141,6 +153,15 @@ export function startOverlay(
   canvas.addEventListener('contextmenu', onContext);
 
   scheduler.start();
+
+  // Diagnostics for live verification (CDP): AudioContext state and sound counters. Counts only.
+  (globalThis as { __critter?: unknown }).__critter = {
+    audioState: (): string => sound.audioState,
+    peak: (): number => sound.peak(),
+    stats: (): unknown => ({ ...sound.stats }),
+    play: (name: SoundName, force = true): boolean => sound.play(name, { force }),
+    state: (): unknown => driver.debug(),
+  };
 
   return {
     stage,

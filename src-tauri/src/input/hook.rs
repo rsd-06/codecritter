@@ -26,7 +26,15 @@ pub fn start(agg: Arc<Mutex<InputAggregator>>, t0: Instant) -> Arc<AtomicBool> {
             match ev.event_type {
                 EventType::KeyPress(_) => agg.lock().key_down(now),
                 // rdev: positive delta_y = wheel up; the contract is +down.
-                EventType::Wheel { delta_y, .. } => agg.lock().wheel_event(-(delta_y as f64), now),
+                // On Windows the exact wheel hook (wheel.rs) is used instead: rdev truncates small deltas to 0.
+                EventType::Wheel { delta_y, delta_x } => {
+                    #[cfg(windows)]
+                    if super::wheel::ACTIVE.load(Ordering::Relaxed) {
+                        return;
+                    }
+                    agg.lock().wheel_event(-(delta_y as f64) + delta_x as f64, now)
+                }
+                EventType::ButtonPress(_) => agg.lock().click(now),
                 EventType::MouseMove { x, y } => agg.lock().mouse_move(x, y, now),
                 _ => {}
             }

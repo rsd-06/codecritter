@@ -86,6 +86,10 @@ pub fn auto_action(fullscreen: bool, prev_fullscreen: bool, peeking: bool, auto_
 /// Rectangle as (left, top, right, bottom), physical px.
 pub type Rect = (i32, i32, i32, i32);
 
+/// WS_BORDER | WS_DLGFRAME: both set = a title bar.
+#[cfg(windows)]
+const WS_CAPTION_BITS: u32 = 0x00C0_0000;
+
 /// Allowed slack (px) between the window frame and the monitor rect.
 pub const FULLSCREEN_TOLERANCE: i32 = 2;
 
@@ -106,6 +110,10 @@ pub struct FgWindow {
     pub minimized: bool,
     pub ours: bool,
     pub shell: bool,
+    /// Has a title bar (WS_CAPTION). Firefox-family and Chromium strip it in F11 fullscreen; a normally
+    /// maximised window keeps it, which tells it apart when the taskbar auto-hides (maximised then also
+    /// covers the whole monitor).
+    pub captioned: bool,
     pub frame: Rect,
     /// Full monitor rect (rcMonitor) of the monitor the window is on.
     pub monitor: Rect,
@@ -113,7 +121,7 @@ pub struct FgWindow {
 
 /// Pure: if the foreground window is a fullscreen app, the monitor rect it fills.
 pub fn fullscreen_monitor(w: &FgWindow) -> Option<Rect> {
-    if !w.visible || w.minimized || w.ours || w.shell {
+    if !w.visible || w.minimized || w.ours || w.shell || w.captioned {
         return None;
     }
     covers_monitor(w.frame, w.monitor, FULLSCREEN_TOLERANCE).then_some(w.monitor)
@@ -138,7 +146,8 @@ fn foreground_window() -> Option<FgWindow> {
     use windows::Win32::Graphics::Gdi::{GetMonitorInfoW, MonitorFromWindow, MONITORINFO, MONITOR_DEFAULTTONEAREST};
     use windows::Win32::System::Threading::GetCurrentProcessId;
     use windows::Win32::UI::WindowsAndMessaging::{
-        GetClassNameW, GetForegroundWindow, GetWindowRect, GetWindowThreadProcessId, IsIconic, IsWindowVisible,
+        GetClassNameW, GetForegroundWindow, GetWindowLongW, GetWindowRect, GetWindowThreadProcessId, IsIconic,
+        IsWindowVisible, GWL_STYLE,
     };
     // SAFETY: plain Win32 queries on the foreground HWND with correctly sized out-buffers.
     unsafe {
@@ -172,6 +181,7 @@ fn foreground_window() -> Option<FgWindow> {
             minimized: IsIconic(hwnd).as_bool(),
             ours: pid == GetCurrentProcessId(),
             shell: is_shell_class(&class),
+            captioned: (GetWindowLongW(hwnd, GWL_STYLE) as u32) & WS_CAPTION_BITS == WS_CAPTION_BITS,
             frame: (r.left, r.top, r.right, r.bottom),
             monitor: (m.left, m.top, m.right, m.bottom),
         })
@@ -329,7 +339,7 @@ mod tests {
     const MON: Rect = (0, 0, 1920, 1080);
     const MON2: Rect = (1920, 0, 3840, 1080);
     fn fg(frame: Rect, monitor: Rect) -> FgWindow {
-        FgWindow { visible: true, minimized: false, ours: false, shell: false, frame, monitor }
+        FgWindow { visible: true, minimized: false, ours: false, shell: false, captioned: false, frame, monitor }
     }
 
     #[test]
@@ -345,6 +355,13 @@ mod tests {
     }
 
     #[test]
+    fn maximised_window_with_autohide_taskbar_covers_the_monitor_but_keeps_its_title_bar() {
+        let w = FgWindow { captioned: true, ..fg(MON, MON) };
+        assert_eq!(fullscreen_monitor(&w), None);
+        assert!(!decide_fullscreen(1, Some(&w), Some(MON)));
+    }
+
+    #[test]
     fn borderless_fullscreen_game_counts_even_with_overshoot() {
         assert!(fullscreen_monitor(&fg((-8, -8, 1928, 1088), MON)).is_some());
     }
@@ -356,6 +373,7 @@ mod tests {
             FgWindow { ours: true, ..fg(MON, MON) },
             FgWindow { visible: false, ..fg(MON, MON) },
             FgWindow { minimized: true, ..fg(MON, MON) },
+            FgWindow { captioned: true, ..fg(MON, MON) },
         ] {
             assert_eq!(fullscreen_monitor(&f), None);
         }

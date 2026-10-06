@@ -14,6 +14,7 @@ export type StateId =
   | 'hunt'
   | 'purr'
   | 'overheat'
+  | 'frenzy'
   | 'knead'
   | 'paper'
   | 'thinking'
@@ -31,6 +32,7 @@ export const STATE_ORDER: readonly StateId[] = [
   'hunt',
   'purr',
   'overheat',
+  'frenzy',
   'knead',
   'paper',
   'thinking',
@@ -43,6 +45,8 @@ export const BORED_AFTER_MS = 120_000;
 export const SLEEP_AFTER_MS = 300_000;
 export const OVERHEAT_AFTER_S = 3;
 export const PAPER_ROLLBACK_AFTER_S = 4;
+/** The scroll reaction is always shown at least this long after the last wheel event. */
+export const PAPER_MIN_VISIBLE_S = 1.2;
 export const AGENT_DONE_S = 2.4;
 export const AGENT_ALERT_S = 4.5;
 export const PENDING_TTL_S = 8;
@@ -199,7 +203,7 @@ class AgentDone extends Base {
       : pick(b.character, 'done', { name: b.name, agent: label }, b.rng).text;
     b.say('speech', text, 4200);
     b.hop(2);
-    b.sinks.sound.jingle();
+    b.sinks.sound.play('agentDone');
     b.burst('sparkle', 6);
   }
   update(_dt: number, b: Brain): void {
@@ -232,8 +236,9 @@ class AgentAlert extends Base {
     const text = req.message
       ? truncate(req.message, 44)
       : pick(b.character, req.error ? 'error' : 'alert', { name: b.name, agent: label }, b.rng).text;
-    b.say('speech', text, 5000);
-    b.sinks.sound.alert();
+    b.say('speech', text, 5000, false);
+    if (req.error) b.sinks.sound.play('agentError');
+    else b.startWaitingTaps();
     b.emitAtHead('exclaim', 20, -26);
   }
   update(_dt: number, b: Brain): void {
@@ -268,7 +273,7 @@ class Hunt extends Base {
     this.dir = b.huntReq.dir || 1;
     this.lastPhase = 0;
     b.huntActiveUntil = b.t() + HUNT_END_S;
-    b.sinks.sound.blip();
+    b.sinks.sound.play('lift');
   }
   update(_dt: number, b: Brain): void {
     const e = b.t() - b.stateSince;
@@ -282,7 +287,7 @@ class Hunt extends Base {
       if (this.lastPhase === 0) {
         this.lastPhase = 1;
         b.sqy.vel += 2;
-        b.sinks.sound.blip();
+        b.sinks.sound.play('lift');
       }
       i.pose = 'pounce';
       i.expression = 'excited';
@@ -350,12 +355,18 @@ class Overheat extends Base {
     // hysteresis: starts at 3 s of sustained heat, stays until the heat has drained
     return b.state === this ? b.heat > 0.05 : b.heat >= OVERHEAT_AFTER_S;
   }
-  enter(): void {
+  private nextRattle = 0;
+  enter(b: Brain): void {
     this.nextSteam = 0;
+    this.nextRattle = b.t();
   }
   update(_dt: number, b: Brain): void {
     const t = b.t();
     b.i.expression = b.heat > 1.2 ? 'stressed' : 'worried';
+    if (t >= this.nextRattle) {
+      b.sinks.sound.play('overheat');
+      this.nextRattle = t + 2.6;
+    }
     if (b.typing) b.kneadPaws();
     if (b.heat > 1.2 && t >= this.nextSteam) {
       b.emitAtHead('steam', -22, -12);
@@ -365,6 +376,48 @@ class Overheat extends Base {
   }
   animates(): boolean {
     return true;
+  }
+}
+
+/* ---------------------------------------------------------------- click frenzy ---- */
+
+class Frenzy extends Base {
+  readonly id = 'frenzy';
+  readonly minDuration = 1;
+  private nextRattle = 0;
+  private nextSweat = 0;
+  wants(b: Brain): boolean {
+    return b.frenzy.active(b.t());
+  }
+  enter(b: Brain): void {
+    const t = b.t();
+    this.nextRattle = t + 0.75;
+    this.nextSweat = t + 0.2;
+    b.sqy.vel -= 2.5; // flinch
+    b.sqx.vel += 2;
+    b.sinks.sound.play('clickFrenzy');
+  }
+  update(_dt: number, b: Brain): void {
+    const t = b.t();
+    const e = t - b.stateSince;
+    b.i.pose = 'alert';
+    b.i.expression = e < 0.3 ? 'surprised' : 'dizzy';
+    b.i.wiggleX = Math.floor(t * 16) % 2 === 0 ? -1 : 1;
+    if (t >= this.nextSweat) {
+      b.emitAtHead('sweat', (b.rng() < 0.5 ? -1 : 1) * 20, -14);
+      this.nextSweat = t + 0.35;
+    }
+    if (t >= this.nextRattle && b.frenzy.active(t)) {
+      b.sqy.vel -= 1.5;
+      b.sinks.sound.play('clickFrenzy');
+      this.nextRattle = t + 0.75;
+    }
+  }
+  animates(): boolean {
+    return true;
+  }
+  nextEvent(b: Brain): number {
+    return Math.max(0.05, b.frenzy.remaining(b.t()));
   }
 }
 
@@ -392,19 +445,21 @@ class Knead extends Base {
 
 class Paper extends Base {
   readonly id = 'paper';
-  readonly minDuration = 1;
+  readonly minDuration = PAPER_MIN_VISIBLE_S;
   wants(b: Brain): boolean {
     return b.settings.reactions.paper && b.paper > 0.001;
   }
-  update(dt: number, b: Brain): void {
-    const t = b.t();
+  update(_dt: number, b: Brain): void {
+    // the sheet length itself (unroll on scroll down, roll up on scroll up, roll back when idle) is
+    // simulated by the Brain every tick so it keeps moving while higher states hold the stage
     b.i.paws = 'hold-paper';
     b.i.prop = 'paper';
-    b.i.expression = 'focused';
-    if (t - b.lastScrollAt > PAPER_ROLLBACK_AFTER_S) b.paper = Math.max(0, b.paper - dt * 0.5); // roll back up
+    b.i.expression = b.scrollIntensity > 0.6 ? 'excited' : 'focused';
+    if (b.scrollIntensity > 0.6) b.i.wiggleX = Math.floor(b.t() * 14) % 2 === 0 ? -1 : 1;
   }
   animates(b: Brain): boolean {
-    return b.t() - b.lastScrollAt <= PAPER_ROLLBACK_AFTER_S ? b.t() - b.lastScrollAt < 1.2 : true;
+    const since = b.t() - b.lastScrollAt;
+    return since < PAPER_MIN_VISIBLE_S || since > PAPER_ROLLBACK_AFTER_S || b.paperMoving;
   }
   nextEvent(b: Brain): number {
     return Math.max(0.05, b.lastScrollAt + PAPER_ROLLBACK_AFTER_S - b.t());
@@ -505,11 +560,13 @@ class Sleep extends Base {
   readonly minDuration = 0.5;
   private nextZ = 0;
   private flip = 0;
+  private snored = false;
   wants(b: Brain): boolean {
     return b.settings.reactions.sleep && b.idleMs >= SLEEP_AFTER_MS;
   }
   enter(b: Brain): void {
     this.nextZ = b.t() + 5;
+    this.snored = false;
   }
   update(_dt: number, b: Brain): void {
     const t = b.t();
@@ -518,6 +575,10 @@ class Sleep extends Base {
     if (e > 4) {
       b.i.pose = 'sleep';
       b.i.mouth = 'neutral'; // no yawning while asleep
+      if (!this.snored) {
+        this.snored = true;
+        b.sinks.sound.play('sleep'); // one very quiet low breath when it drops off
+      }
       // Zzz rides on breath ticks (no dedicated wake-ups) so sleeping stays <= ~1 redraw/s
       if (t >= this.nextZ) {
         b.emitAtHead('zzz', 14, -14, { variant: this.flip++ % 2 });
@@ -544,6 +605,7 @@ export function createStates(): BState[] {
     hunt: new Hunt(),
     purr: new Purr(),
     overheat: new Overheat(),
+    frenzy: new Frenzy(),
     knead: new Knead(),
     paper: new Paper(),
     thinking: new Thinking(),

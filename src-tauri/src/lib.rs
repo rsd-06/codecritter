@@ -25,10 +25,13 @@ pub fn run() {
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
-        // Second launch just opens the settings window.
-        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            winmgr::open_settings(app);
-        }));
+        // Second launch just opens the settings window. CRITTER_MULTI=1 (dev/testing only) skips this so a
+        // test build can run next to an installed copy.
+        if std::env::var_os("CRITTER_MULTI").is_none() {
+            builder = builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+                winmgr::open_settings(app);
+            }));
+        }
     }
 
     builder

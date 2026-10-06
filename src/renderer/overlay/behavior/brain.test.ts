@@ -5,7 +5,7 @@ import { FixedStepper } from '../engine/spring';
 import { defaultPoseState } from '../engine/types';
 import { AgentTracker } from './agents';
 import { Brain, type Sinks } from './brain';
-import { PettingDetector, ReversalCounter } from './detectors';
+import { ClickFrenzyDetector, FRENZY_HOLD_S, PettingDetector, ReversalCounter } from './detectors';
 import { STRINGS, format, pick, stripName, truncate, type StringKey } from './strings';
 
 /* ------------------------------------------------------------------ harness */
@@ -55,10 +55,8 @@ function rig(patch: Partial<Settings> = {}, hour = 12) {
     },
     sound: {
       speak: () => log.sounds.push('speak'),
-      jingle: () => log.sounds.push('jingle'),
-      alert: () => log.sounds.push('alert'),
+      play: (name, o) => log.sounds.push(o?.level !== undefined ? `${name}:${o.level.toFixed(2)}` : name),
       purr: (on) => log.sounds.push(on ? 'purr-on' : 'purr-off'),
-      blip: () => log.sounds.push('blip'),
     },
     setPomodoro: (v) => log.pomodoro.push(v),
     setNote: (t) => {
@@ -91,7 +89,7 @@ function rig(patch: Partial<Settings> = {}, hour = 12) {
     for (let k = 0; k < n; k++) brain.update(stepper.step);
   };
   const input = (s: Partial<InputSample> = {}): void =>
-    brain.handleInput({ keysPerSec: 0, keyBurst: false, scrollDelta: 0, mouseSpeed: 0, idleMs: 0, ...s });
+    brain.handleInput({ keysPerSec: 0, keyBurst: false, scrollDelta: 0, mouseSpeed: 0, clicksPerSec: 0, idleMs: 0, ...s });
   /** type at `kps` for `sec` seconds, sending a 10 Hz sample like main does */
   const type = (sec: number, kps = 5): void => {
     for (let n = 0; n < Math.round(sec * 10); n++) {
@@ -324,7 +322,7 @@ describe('Brain: priorities and interruptions', () => {
     r.brain.dragEnd();
     r.advance(0.5);
     expect(r.brain.stateId).toBe('agentAlert');
-    expect(r.log.sounds).toContain('alert');
+    expect(r.log.sounds).toContain('agentWaiting');
   });
 });
 
@@ -345,7 +343,7 @@ describe('Brain: reminder queue', () => {
   });
 
   it('drops same-kind duplicates and caps the queue at 3', () => {
-    const r = rig();
+    const r = rig({ sound: { ...DEFAULT_SETTINGS.sound, enabled: false } }); // no escalating repeats
     const ev = (kind: 'stretch' | 'water' | 'message' | 'pomodoro-focus' | 'pomodoro-break', text = '') =>
       r.brain.handleReminder({ kind, text, durationMs: 4000 });
     ev('stretch');
@@ -412,7 +410,7 @@ describe('Brain: reminders', () => {
     r.brain.handleReminder({ kind: 'pomodoro-done', text: '', durationMs: 4000 });
     r.advance(0.2);
     expect(r.brain.i.expression).toBe('proud');
-    expect(r.log.sounds).toContain('jingle');
+    expect(r.log.sounds).toContain('pomodoroDone');
   });
 
   it('Yoda gets Yoda-speak', () => {
@@ -457,7 +455,7 @@ describe('Brain: agents', () => {
     r.advance(0.3);
     expect(r.brain.stateId).toBe('agentDone');
     expect(lastBubble(r)).toContain('Claude');
-    expect(r.log.sounds).toContain('jingle');
+    expect(r.log.sounds).toContain('agentDone');
     r.advance(5);
     expect(r.brain.stateId).toBe('idle');
   });
@@ -477,7 +475,7 @@ describe('Brain: agents', () => {
     expect(r.brain.stateId).toBe('agentAlert');
     expect(r.brain.i.expression).toBe('worried');
     expect(lastBubble(r)).toMatch(/Claude/);
-    expect(r.log.sounds).toContain('alert');
+    expect(r.log.sounds).toContain('agentWaiting');
     expect(r.log.emits).toContain('exclaim');
   });
 
@@ -512,7 +510,7 @@ describe('Brain: agents', () => {
     r.agent('done');
     r.advance(1);
     expect(r.brain.stateId).toBe('peek');
-    expect(r.log.sounds).not.toContain('jingle');
+    expect(r.log.sounds).not.toContain('agentDone');
   });
 });
 
@@ -702,8 +700,8 @@ describe('Brain: petting / purr', () => {
   });
 });
 
-describe('Brain: paper', () => {
-  it('scroll unspools the paper proportional to the scroll, rolls back after 4 s', () => {
+describe('Brain: paper (scroll)', () => {
+  it('scroll unspools the paper proportional to the scroll, holds, then rolls back', () => {
     const r = rig();
     r.input({ scrollDelta: 3 });
     r.advance(0.3);
@@ -726,11 +724,207 @@ describe('Brain: paper', () => {
     expect(r.pose.prop).toBeUndefined();
   });
 
+  it('tiny precision-touchpad deltas (1/8 notch) still produce a visible reaction', () => {
+    const r = rig();
+    for (let n = 0; n < 5; n++) {
+      r.input({ scrollDelta: 0.125 });
+      r.advance(0.1);
+    }
+    expect(r.brain.stateId).toBe('paper');
+    expect(r.pose.prop).toBe('paper');
+    expect(r.pose.propProgress ?? 0).toBeGreaterThan(0.1);
+  });
+
+  it('is direction aware: down unrolls the sheet, up rolls it back up', () => {
+    const r = rig();
+    for (let n = 0; n < 8; n++) {
+      r.input({ scrollDelta: 2 });
+      r.advance(0.1);
+    }
+    r.advance(0.5);
+    const down = r.pose.propProgress ?? 0;
+    expect(down).toBeGreaterThan(0.4);
+    for (let n = 0; n < 8; n++) {
+      r.input({ scrollDelta: -2 });
+      r.advance(0.1);
+    }
+    r.advance(0.5);
+    expect(r.pose.propProgress ?? 0).toBeLessThan(down - 0.2);
+    expect(r.brain.stateId).toBe('paper');
+  });
+
+  it('a first scroll UP from rest shows a sheet to roll up (not nothing)', () => {
+    const r = rig();
+    r.input({ scrollDelta: -1 });
+    r.advance(0.4);
+    expect(r.brain.stateId).toBe('paper');
+    expect(r.pose.propProgress ?? 0).toBeGreaterThan(0.2);
+  });
+
+  it('a short burst stays visible for at least 1.2 s after the last wheel event', () => {
+    const r = rig();
+    r.input({ scrollDelta: 0.25 });
+    r.advance(0.1);
+    r.advance(1.2);
+    expect(r.brain.stateId).toBe('paper');
+    expect(r.pose.prop).toBe('paper');
+  });
+
+  it('faster scrolling makes bigger steps and a livelier face', () => {
+    const slow = rig();
+    slow.input({ scrollDelta: 0.5 });
+    slow.advance(0.6);
+    const fast = rig();
+    fast.input({ scrollDelta: 6 });
+    fast.advance(0.1);
+    fast.input({ scrollDelta: 6 });
+    fast.advance(0.1);
+    expect(fast.pose.propProgress ?? 0).toBeGreaterThan(slow.pose.propProgress ?? 0);
+    expect(fast.brain.i.expression).toBe('excited');
+  });
+
+  it('typing outranks the paper, but the sheet is still there afterwards', () => {
+    const r = rig();
+    r.input({ scrollDelta: 3 });
+    r.advance(0.5);
+    r.type(1.5);
+    expect(r.brain.stateId).toBe('knead');
+    r.advance(2.2);
+    expect(r.brain.stateId).toBe('paper');
+  });
+
   it('toggle respected', () => {
     const r = rig({ reactions: { ...DEFAULT_SETTINGS.reactions, paper: false } });
     r.input({ scrollDelta: 5 });
     r.advance(0.5);
     expect(r.brain.stateId).not.toBe('paper');
+  });
+});
+
+describe('Brain: click frenzy', () => {
+  it('detector latches at >= 6 clicks/s and releases after the hold', () => {
+    const d = new ClickFrenzyDetector();
+    expect(d.push(5, 0)).toBe(false);
+    expect(d.active(0)).toBe(false);
+    expect(d.push(6, 1)).toBe(true);
+    expect(d.push(8, 1.2)).toBe(false); // already frenzied
+    expect(d.active(2.5)).toBe(true);
+    expect(d.active(1.2 + FRENZY_HOLD_S + 0.01)).toBe(false);
+    expect(d.push(6, 5)).toBe(true);
+  });
+
+  it('clicking too fast -> flinch, dizzy eyes and a rattle; calm clicking does not', () => {
+    const calm = rig();
+    calm.input({ clicksPerSec: 3 });
+    calm.advance(1);
+    expect(calm.brain.stateId).toBe('idle');
+    expect(calm.log.sounds).not.toContain('clickFrenzy');
+
+    const r = rig();
+    r.input({ clicksPerSec: 7 });
+    r.advance(0.2);
+    expect(r.brain.stateId).toBe('frenzy');
+    expect(r.log.sounds).toContain('clickFrenzy');
+    r.advance(0.5);
+    expect(r.brain.i.expression).toBe('dizzy');
+    r.advance(4);
+    expect(r.brain.stateId).toBe('idle');
+  });
+
+  it('single clicks click, but not during a frenzy', () => {
+    const r = rig();
+    r.input({ clicksPerSec: 1 });
+    expect(r.log.sounds).toContain('click');
+    const n = r.log.sounds.filter((x) => x === 'click').length;
+    r.input({ clicksPerSec: 7 });
+    expect(r.log.sounds.filter((x) => x === 'click').length).toBe(n);
+  });
+});
+
+describe('Brain: sounds', () => {
+  it('thinking -> tool = agentWork once; done = agentDone', () => {
+    const r = rig();
+    r.agent('thinking');
+    r.advance(0.2);
+    expect(r.log.sounds).not.toContain('agentWork');
+    r.agent('tool');
+    r.agent('tool');
+    r.advance(0.2);
+    expect(r.log.sounds.filter((x) => x === 'agentWork').length).toBe(1);
+    r.agent('done');
+    r.advance(0.3);
+    expect(r.log.sounds).toContain('agentDone');
+  });
+
+  it('error = thunks, not the waiting tap', () => {
+    const r = rig();
+    r.agent('error');
+    r.advance(0.3);
+    expect(r.log.sounds).toContain('agentError');
+    expect(r.log.sounds).not.toContain('agentWaiting');
+  });
+
+  it('waiting taps repeat at most 3 times and stop at the first user input', () => {
+    const r = rig();
+    r.agent('attention');
+    r.advance(12);
+    expect(r.log.sounds.filter((x) => x === 'agentWaiting').length).toBe(3);
+
+    const q = rig();
+    q.agent('attention');
+    q.advance(1);
+    expect(q.log.sounds.filter((x) => x === 'agentWaiting').length).toBe(1);
+    q.input({ mouseSpeed: 300, idleMs: 100 });
+    q.advance(10);
+    expect(q.log.sounds.filter((x) => x === 'agentWaiting').length).toBe(1);
+  });
+
+  it('stretch reminder repeats louder every ~20 s for ~2 min; clicking the critter stops it at once', () => {
+    const r = rig();
+    r.brain.handleReminder({ kind: 'stretch', text: '', durationMs: 5000 });
+    r.advance(1);
+    expect(r.log.sounds.filter((x) => x.startsWith('reminder:')).length).toBe(1);
+    r.advance(21);
+    expect(r.log.sounds.filter((x) => x.startsWith('reminder:')).length).toBe(2);
+    r.advance(60);
+    const levels = r.log.sounds.filter((x) => x.startsWith('reminder:')).map((x) => Number(x.split(':')[1]));
+    expect(levels.length).toBeGreaterThan(4);
+    for (let i = 1; i < levels.length; i++) expect(levels[i]!).toBeGreaterThanOrEqual(levels[i - 1]!);
+    r.advance(80); // past the 2 minute cap
+    const total = r.log.sounds.filter((x) => x.startsWith('reminder:')).length;
+    r.advance(60);
+    expect(r.log.sounds.filter((x) => x.startsWith('reminder:')).length).toBe(total);
+
+    const q = rig();
+    q.brain.handleReminder({ kind: 'water', text: '', durationMs: 5000 });
+    q.advance(5);
+    q.brain.dragStart(); // clicked the critter
+    q.brain.dragEnd();
+    const before = q.log.sounds.filter((x) => x.startsWith('reminder:')).length;
+    q.advance(100);
+    expect(q.log.sounds.filter((x) => x.startsWith('reminder:')).length).toBe(before);
+  });
+
+  it('no repeats when reminder sounds are switched off', () => {
+    const r = rig({
+      sound: { ...DEFAULT_SETTINGS.sound, categories: { ...DEFAULT_SETTINGS.sound.categories, reminders: false } },
+    });
+    r.brain.handleReminder({ kind: 'stretch', text: '', durationMs: 5000 });
+    r.advance(100);
+    expect(r.log.sounds.filter((x) => x.startsWith('reminder:')).length).toBe(1);
+  });
+
+  it('pomodoro transitions ring their own bells; drag lifts and drops', () => {
+    const r = rig();
+    r.brain.handleReminder({ kind: 'pomodoro-focus', text: '', durationMs: 4000 });
+    r.advance(6);
+    r.brain.handleReminder({ kind: 'pomodoro-break', text: '', durationMs: 4000 });
+    expect(r.log.sounds).toContain('pomodoroFocus');
+    expect(r.log.sounds).toContain('pomodoroBreak');
+    r.brain.dragStart();
+    r.brain.dragEnd();
+    expect(r.log.sounds).toContain('lift');
+    expect(r.log.sounds).toContain('drop');
   });
 });
 

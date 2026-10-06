@@ -5,6 +5,7 @@ const KEY_WINDOW_MS: f64 = 1000.0;
 const BURST_MS: f64 = 150.0;
 const MOUSE_WINDOW_MS: f64 = 200.0;
 const RING: usize = 512;
+const CLICK_RING: usize = 64;
 
 /// Mirrors the TS `InputSample` (serialised camelCase by the caller).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -13,6 +14,8 @@ pub struct Sample {
     pub key_burst: bool,
     pub scroll_delta: f64,
     pub mouse_speed: f64,
+    /// Mouse button presses in the last second (a count only; which button is never recorded).
+    pub clicks_per_sec: u32,
     pub idle_ms: f64,
 }
 
@@ -21,6 +24,9 @@ pub struct InputAggregator {
     key_head: usize,
     key_count: usize,
     wheel: f64,
+    clicks: [f64; CLICK_RING],
+    click_head: usize,
+    click_count: usize,
     last_input: f64,
     last_xy: Option<(f64, f64)>,
     mt: [f64; RING],
@@ -40,6 +46,9 @@ impl InputAggregator {
             key_head: 0,
             key_count: 0,
             wheel: 0.0,
+            clicks: [0.0; CLICK_RING],
+            click_head: 0,
+            click_count: 0,
             last_input: now,
             last_xy: None,
             mt: [0.0; RING],
@@ -58,6 +67,15 @@ impl InputAggregator {
         self.key_head = (self.key_head + 1) % RING;
         if self.key_count < RING {
             self.key_count += 1;
+        }
+        self.last_input = now;
+    }
+
+    pub fn click(&mut self, now: f64) {
+        self.clicks[self.click_head] = now;
+        self.click_head = (self.click_head + 1) % CLICK_RING;
+        if self.click_count < CLICK_RING {
+            self.click_count += 1;
         }
         self.last_input = now;
     }
@@ -97,6 +115,14 @@ impl InputAggregator {
                 burst = true;
             }
         }
+        let mut cps = 0u32;
+        for i in 0..self.click_count {
+            let age = now - self.clicks[(self.click_head + CLICK_RING - 1 - i) % CLICK_RING];
+            if age > KEY_WINDOW_MS {
+                break;
+            }
+            cps += 1;
+        }
         let mut dist = 0.0;
         for i in 0..self.m_count {
             let idx = (self.m_head + RING - 1 - i) % RING;
@@ -112,6 +138,7 @@ impl InputAggregator {
             key_burst: burst,
             scroll_delta,
             mouse_speed: (dist * 1000.0 / MOUSE_WINDOW_MS).round(),
+            clicks_per_sec: cps,
             idle_ms: (now - self.last_input).max(0.0),
         }
     }
@@ -121,7 +148,7 @@ impl InputAggregator {
     /// `idle_heartbeat_ms` once quiet.
     pub fn tick(&mut self, now: f64) -> Option<Sample> {
         let s = self.sample(now);
-        let quiet = s.keys_per_sec == 0 && s.scroll_delta == 0.0 && s.mouse_speed == 0.0 && !s.key_burst;
+        let quiet = s.keys_per_sec == 0 && s.clicks_per_sec == 0 && s.scroll_delta == 0.0 && s.mouse_speed == 0.0 && !s.key_burst;
         let changed = match &self.last_emit {
             None => true,
             Some(p) => {
@@ -130,6 +157,7 @@ impl InputAggregator {
                     || s.scroll_delta != 0.0
                     || p.scroll_delta != 0.0
                     || p.mouse_speed != s.mouse_speed
+                    || p.clicks_per_sec != s.clicks_per_sec
             }
         };
         let hb = if quiet && s.idle_ms > 5000.0 { self.idle_heartbeat_ms } else { self.heartbeat_ms };
@@ -173,6 +201,42 @@ mod tests {
         a.wheel_event(-1.0, 20.0);
         assert_eq!(a.sample(30.0).scroll_delta, 2.0);
         assert_eq!(a.sample(40.0).scroll_delta, 0.0);
+    }
+
+    #[test]
+    fn small_precision_touchpad_deltas_accumulate_not_round_away() {
+        let mut a = agg();
+        for i in 0..8 {
+            a.wheel_event(0.125, i as f64 * 5.0); // +-15 / 120
+        }
+        assert!((a.sample(100.0).scroll_delta - 1.0).abs() < 1e-9);
+        a.wheel_event(-0.25, 110.0);
+        assert!(a.sample(150.0).scroll_delta < 0.0);
+    }
+
+    #[test]
+    fn a_short_scroll_burst_is_emitted_once_then_a_zero_follows() {
+        let mut a = agg();
+        assert!(a.tick(0.0).is_some());
+        a.wheel_event(0.125, 120.0);
+        let s = a.tick(150.0).expect("scroll emits");
+        assert!(s.scroll_delta > 0.0);
+        let z = a.tick(250.0).expect("the return to zero emits so the brain sees it ended");
+        assert_eq!(z.scroll_delta, 0.0);
+        assert!(a.tick(350.0).is_none());
+    }
+
+    #[test]
+    fn counts_clicks_in_the_last_second_and_emits_on_change() {
+        let mut a = agg();
+        assert!(a.tick(0.0).is_some());
+        for i in 0..6 {
+            a.click(100.0 + i as f64 * 100.0);
+        }
+        assert_eq!(a.sample(700.0).clicks_per_sec, 6);
+        assert!(a.tick(700.0).is_some());
+        assert_eq!(a.sample(1250.0).clicks_per_sec, 4);
+        assert_eq!(a.sample(3000.0).clicks_per_sec, 0);
     }
 
     #[test]

@@ -6,6 +6,7 @@ import { MockBridge } from '../overlay/bridge';
 import { EXPRESSION_NAMES } from '../overlay/engine/expression';
 import type { ExpressionName } from '../overlay/engine/types';
 import { startOverlay } from '../overlay/main';
+import { ALL_SOUNDS } from '../overlay/engine/soundPlan';
 
 const bridge = new MockBridge();
 const canvas = document.getElementById('stage') as HTMLCanvasElement;
@@ -30,7 +31,8 @@ bridge.onInteractive = (on) => {
 };
 
 /* ------------------------------------------------------------------ real input -> samples */
-const sim = { kps: 0, scroll: 0, mouse: 0, idleSec: 0 };
+const sim = { kps: 0, scroll: 0, mouse: 0, clicks: 0, idleSec: 0 };
+const clickTimes: number[] = [];
 const keyTimes: number[] = [];
 let wheelAcc = 0;
 let moveDist = 0;
@@ -53,6 +55,10 @@ desk.addEventListener('pointermove', (e) => {
     const r = win.getBoundingClientRect();
     bridge.emitCursor({ x: e.clientX, y: e.clientY, winX: r.left, winY: r.top, winW: r.width, winH: r.height });
   }
+});
+desk.addEventListener('pointerdown', () => {
+  clickTimes.push(performance.now());
+  lastActivity = performance.now();
 });
 document.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
@@ -77,14 +83,16 @@ setInterval(() => {
   const recent = keyTimes.length > 0 && now - keyTimes[keyTimes.length - 1]! < 150;
   const kps = Math.max(realKps, sim.kps);
   const burst = recent || sim.kps > 0;
+  while (clickTimes.length && now - clickTimes[0]! > 1000) clickTimes.shift();
+  const clicks = Math.max(clickTimes.length, sim.clicks);
   const scroll = wheelAcc + sim.scroll;
   const mouse = Math.max(moveDist * 10, sim.mouse);
   const idleMs = Math.max(now - lastActivity, sim.idleSec * 1000);
-  const active = kps > 0 || burst || scroll !== 0 || mouse > 0;
+  const active = kps > 0 || burst || scroll !== 0 || mouse > 0 || clicks > 0;
   wheelAcc = 0;
   moveDist = 0;
   if (!active && ++quietTicks % 20 !== 0) return; // keep the bus quiet when nothing happens
-  bridge.emitInput({ keysPerSec: kps, keyBurst: burst, scrollDelta: scroll, mouseSpeed: mouse, idleMs });
+  bridge.emitInput({ keysPerSec: kps, keyBurst: burst, scrollDelta: scroll, mouseSpeed: mouse, clicksPerSec: clicks, idleMs });
 }, 100);
 
 /* ------------------------------------------------------------------ panel helpers */
@@ -237,10 +245,11 @@ const inp = section('Simulated input');
 slider(inp, 'keys/sec', 0, 16, 1, 0, (v) => (sim.kps = v));
 slider(inp, 'scroll', 0, 10, 1, 0, (v) => (sim.scroll = v));
 slider(inp, 'mouse px/s', 0, 6000, 100, 0, (v) => (sim.mouse = v));
+slider(inp, 'clicks/sec', 0, 12, 1, 0, (v) => (sim.clicks = v));
 slider(inp, 'idle sec', 0, 600, 10, 0, (v) => (sim.idleSec = v));
 btn(row(inp), 'reset sliders', () => {
   panel.querySelectorAll<HTMLInputElement>('.sec input[type=range]').forEach((i) => {
-    if (['keys/sec', 'scroll', 'mouse px/s', 'idle sec'].includes(i.parentElement?.firstElementChild?.textContent ?? '')) {
+    if (['keys/sec', 'scroll', 'mouse px/s', 'clicks/sec', 'idle sec'].includes(i.parentElement?.firstElementChild?.textContent ?? '')) {
       i.value = '0';
       i.dispatchEvent(new Event('input'));
     }
@@ -389,9 +398,8 @@ sRow.append(sl);
 slider(snd, 'volume', 0, 1, 0.05, 0.5, (v) => bridge.emitSettings({ sound: { ...bridge.settings.sound, volume: v } }));
 const sRow2 = row(snd, undefined, 'chips');
 btn(sRow2, 'voice', () => overlay.sound.speak(24));
-btn(sRow2, 'blip', () => overlay.sound.blip());
-btn(sRow2, 'jingle', () => overlay.sound.jingle());
-btn(sRow2, 'alert', () => overlay.sound.alert());
+const sRow3 = row(snd, undefined, 'chips');
+for (const n of ALL_SOUNDS) btn(sRow3, n, () => overlay.sound.play(n, { force: true, level: n === 'reminder' ? 0.6 : undefined }));
 btn(sRow2, 'purr on', () => overlay.sound.purr(true));
 btn(sRow2, 'purr off', () => overlay.sound.purr(false));
 

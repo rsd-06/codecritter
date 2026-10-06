@@ -102,6 +102,37 @@ export class PettingDetector {
   }
 }
 
+/** Click frenzy: this many mouse clicks inside one second. */
+export const FRENZY_CPS = 6;
+/** The reaction stays this long after the last qualifying sample. */
+export const FRENZY_HOLD_S = 1.6;
+
+/** Latching "clicking way too fast" detector over the aggregator's clicks-per-second count (pure). */
+export class ClickFrenzyDetector {
+  private until = -1e9;
+
+  /** Feed a sample; true when this sample STARTS a new frenzy. */
+  push(clicksPerSec: number, t: number): boolean {
+    if (clicksPerSec < FRENZY_CPS) return false;
+    const fresh = t >= this.until;
+    this.until = t + FRENZY_HOLD_S;
+    return fresh;
+  }
+
+  active(t: number): boolean {
+    return t < this.until;
+  }
+
+  /** Seconds the reaction still has to run. */
+  remaining(t: number): number {
+    return Math.max(0, this.until - t);
+  }
+
+  reset(): void {
+    this.until = -1e9;
+  }
+}
+
 /** Head hit region around Stage.head (logical px). */
 export const HEAD_HALF_W = 22;
 export const HEAD_UP = 22;

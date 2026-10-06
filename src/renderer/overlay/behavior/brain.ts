@@ -29,11 +29,20 @@ import {
 } from '../engine/types';
 import { formatMMSS, type PomodoroView } from '../engine/widgets';
 import { AgentTracker } from './agents';
-import { PettingDetector, ShakeDetector } from './detectors';
+import { ReminderNag, WaitingTapper, type SoundName } from '../engine/soundPlan';
+import { ClickFrenzyDetector, PettingDetector, ShakeDetector } from './detectors';
 import { computeLook, type LookGeom } from './look';
 import { ReminderQueue } from './reminderQueue';
 import { pick, truncate } from './strings';
-import { BORED_AFTER_MS, STATE_ORDER, PENDING_TTL_S, createStates, type BState, type StateId } from './states';
+import {
+  BORED_AFTER_MS,
+  STATE_ORDER,
+  PENDING_TTL_S,
+  PAPER_ROLLBACK_AFTER_S,
+  createStates,
+  type BState,
+  type StateId,
+} from './states';
 
 const STEP = 1 / 12;
 const SESSION_PRUNE_S = 5;
@@ -72,10 +81,9 @@ export interface Sinks {
   };
   sound: {
     speak(len?: number): void;
-    jingle(): void;
-    alert(): void;
+    /** `delay` (s) staggers several sounds fired in the same tick; `level` is the reminder escalation 0..1 */
+    play(name: SoundName, opts?: { level?: number; delay?: number }): unknown;
     purr(on: boolean): void;
-    blip(): void;
   };
   setPomodoro(v: PomodoroView | null): void;
   setNote(text: string): void;
@@ -180,9 +188,27 @@ export class Brain {
   private lastInputAt: number;
   lastKeyAt = -1e9;
   lastScrollAt = -1e9;
+  /** displayed sheet length 0..1 (eases toward paperTarget) */
   paper = 0;
+  /** where the sheet is heading: + on scroll down (unroll), - on scroll up (roll up), eases back to 0 when idle */
+  paperTarget = 0;
+  /** 0..1, how fast the wheel is spinning right now */
+  scrollIntensity = 0;
+  readonly frenzy = new ClickFrenzyDetector();
+  private readonly nag = new ReminderNag();
+  private readonly waitTap = new WaitingTapper();
+  private waitStartedAt = 0;
+  private prevKps = 0;
+  private prevClicks = 0;
+  private lastWorkSoundAt = -1e9;
+  private readonly agentLast = new Map<string, string>();
   heat = 0;
   private fastMouseSeen = 0;
+
+  /** the sheet is still easing toward its target length */
+  get paperMoving(): boolean {
+    return Math.abs(this.paperTarget - this.paper) > 0.002;
+  }
 
   /* ---- cursor */
   private cursorAt = -1e9;
@@ -377,7 +403,10 @@ export class Brain {
     const prevPurr = this.purrUntil;
 
     // petting: cursor rubbing back and forth over the head
-    if (this.settings.reactions.purr && this.petting.push(dx / ppl, dy / ppl, t)) this.purrUntil = t + 1.5;
+    if (this.settings.reactions.purr && this.petting.push(dx / ppl, dy / ppl, t)) {
+      this.purrUntil = t + 1.5;
+      this.acknowledge();
+    }
     let interesting = lookChanged || this.purrUntil !== prevPurr;
 
     // hunt: fast cursor near the character
@@ -425,13 +454,65 @@ export class Brain {
     this.lastInputAt = t;
     if (s.keyBurst) this.lastKeyAt = t;
     if (s.mouseSpeed > FAST_MOUSE_PX_S) this.surprise(1.3);
-    if (s.scrollDelta !== 0 && this.settings.reactions.paper) {
-      this.lastScrollAt = t;
-      this.paper = clamp(this.paper + Math.abs(s.scrollDelta) * 0.03, 0, 1);
-    }
+    if (s.scrollDelta !== 0 && this.settings.reactions.paper) this.scroll(s.scrollDelta, t);
+    this.inputSounds(s, t);
+    if (this.frenzy.push(s.clicksPerSec ?? 0, t)) this.wakeFn();
+    // any user input after the "agent is waiting" taps began stops them
+    if (this.waitTap.active && s.idleMs < 400 && t - this.waitStartedAt > 0.4) this.waitTap.cancel();
     // heartbeat samples with nothing going on must not cost a redraw; waking from bored/sleep must
     const woke = prevIdle >= BORED_AFTER_MS - 1000 && s.idleMs < prevIdle - 1000;
-    if (s.keyBurst || s.keysPerSec > 0 || s.scrollDelta !== 0 || s.mouseSpeed > FAST_MOUSE_PX_S || woke) this.wakeFn();
+    if (
+      s.keyBurst ||
+      s.keysPerSec > 0 ||
+      s.scrollDelta !== 0 ||
+      (s.clicksPerSec ?? 0) > 0 ||
+      s.mouseSpeed > FAST_MOUSE_PX_S ||
+      woke
+    )
+      this.wakeFn();
+  }
+
+  /** Wheel rotation (+down): unroll the sheet on down, roll it up on up; faster wheel = bigger, livelier steps. */
+  private scroll(d: number, t: number): void {
+    const mag = Math.abs(d);
+    this.lastScrollAt = t;
+    this.scrollIntensity = clamp(Math.max(this.scrollIntensity, (mag * 10) / 30), 0, 1); // notches/s over ~30
+    if (this.paperTarget < 0.01 && this.paper < 0.01) this.paperTarget = d < 0 ? 0.55 : 0.22; // something to roll
+    const step = clamp(mag * 0.12, 0.04, 0.35);
+    this.paperTarget = clamp(this.paperTarget + (d > 0 ? step : -step), 0.15, 1);
+  }
+
+  /** Ease the sheet toward its target and roll it back once the wheel has been quiet for a while. */
+  private paperTick(dt: number, t: number): void {
+    this.scrollIntensity = Math.max(0, this.scrollIntensity - dt * 1.5);
+    if (this.paperTarget <= 0 && this.paper <= 0) return;
+    if (t - this.lastScrollAt > PAPER_ROLLBACK_AFTER_S) this.paperTarget = Math.max(0, this.paperTarget - dt * 0.5);
+    const diff = this.paperTarget - this.paper;
+    if (Math.abs(diff) < 0.002) this.paper = this.paperTarget;
+    else this.paper += diff * Math.min(1, dt * (7 + this.scrollIntensity * 8));
+  }
+
+  /** Sounds that follow the user's own typing and clicking (counts only, like everything else). */
+  private inputSounds(s: InputSample, t: number): void {
+    const dk = s.keysPerSec - this.prevKps;
+    this.prevKps = s.keysPerSec;
+    if (dk > 0) for (let n = 0; n < Math.min(dk, 3); n++) this.sinks.sound.play('key', { delay: n * 0.045 });
+    const clicks = s.clicksPerSec ?? 0;
+    const dc = clicks - this.prevClicks;
+    this.prevClicks = clicks;
+    // single clicks click; a frenzy has its own rattle
+    if (dc > 0 && !this.frenzy.active(t) && clicks < 6) this.sinks.sound.play('click');
+  }
+
+  /** The user reacted to the critter (pet / click / drag): stop any repeating reminder chime. */
+  acknowledge(): void {
+    this.nag.ack();
+  }
+
+  /** "Agent is waiting for you": a gentle tap, repeated up to 3 times until the user does anything. */
+  startWaitingTaps(): void {
+    this.waitTap.start(this.t());
+    this.waitStartedAt = this.t();
   }
 
   surprise(sec: number): void {
@@ -443,6 +524,7 @@ export class Brain {
   handleAgent(e: AgentEvent): void {
     const t = this.t();
     this.agents.event(e.agent, e.type, e.session, t);
+    this.agentSound(e, t);
     if (this.peeking) {
       this.wakeFn();
       return; // peek mode: reminders only
@@ -462,6 +544,20 @@ export class Brain {
       r.error = e.type === 'error';
     }
     this.wakeFn();
+  }
+
+  /** thinking -> started replying / using a tool = a crisp double-clack. */
+  private agentSound(e: AgentEvent, t: number): void {
+    const key = `${e.agent}|${e.session ?? ''}`;
+    if (e.type === 'tool' && this.agentLast.get(key) === 'thinking' && t - this.lastWorkSoundAt > 1.5) {
+      this.lastWorkSoundAt = t;
+      this.sinks.sound.play('agentWork');
+    }
+    if (e.type === 'done' || e.type === 'idle' || e.type === 'error') this.agentLast.delete(key);
+    else {
+      if (this.agentLast.size > 32) this.agentLast.clear();
+      this.agentLast.set(key, e.type);
+    }
   }
 
   donePending(t: number): boolean {
@@ -484,7 +580,8 @@ export class Brain {
     this.showReminder(r);
   }
 
-  private showReminder(r: ReminderEvent): void {
+  /** `nagLevel` >= 0 marks an escalating repeat of a stretch / water reminder (no new nag is started). */
+  private showReminder(r: ReminderEvent, nagLevel = -1): void {
     const t = this.t();
     this.reminderShowing = r;
     this.reminderBusyUntil = t + Math.max(2.5, r.durationMs / 1000);
@@ -509,15 +606,53 @@ export class Brain {
       default:
         text = pick(this.character, 'pomodoroDone', { name: this.name }, this.rng).text;
     }
-    // reminders always show a bubble, even while peeking
-    this.say('speech', text, Math.max(2500, r.durationMs));
-    if (r.kind === 'pomodoro-done') this.sinks.sound.jingle();
+    // reminders always show a bubble, even while peeking; chimes replace the voice for timed reminders
+    this.say('speech', text, Math.max(2500, r.durationMs), r.kind === 'message' || r.kind === 'updated');
+    this.reminderSound(r, nagLevel, t);
     if (!this.peeking) {
       this.reminder.kind = r.kind;
       this.reminder.until = t + Math.max(2.5, r.durationMs / 1000);
       if (r.kind === 'message' || r.kind === 'pomodoro-done' || r.kind === 'updated') this.hop(1);
     }
     this.wakeFn();
+  }
+
+  private reminderSound(r: ReminderEvent, nagLevel: number, t: number): void {
+    const snd = this.sinks.sound;
+    switch (r.kind) {
+      case 'stretch':
+      case 'water':
+        snd.play('reminder', { level: Math.max(0, nagLevel) });
+        if (nagLevel < 0) {
+          const s = this.settings.sound;
+          if (s.enabled && s.volume > 0 && s.categories.reminders) this.nag.start(r.kind, t);
+        }
+        break;
+      case 'pomodoro-focus':
+        snd.play('pomodoroFocus');
+        break;
+      case 'pomodoro-break':
+        snd.play('pomodoroBreak');
+        break;
+      case 'pomodoro-done':
+        snd.play('pomodoroDone');
+        break;
+      default:
+    }
+  }
+
+  /** Escalating repeats + waiting taps; called every tick. */
+  private soundTimers(t: number): void {
+    const step = this.nag.poll(t);
+    if (step && this.nag.kind !== null) {
+      const kind = this.nag.kind;
+      if (t >= this.reminderBusyUntil) this.showReminder({ kind, text: '', durationMs: 3500 }, step.level);
+      else this.sinks.sound.play('reminder', { level: step.level });
+    } else if (step) {
+      // last step of the schedule: the nag object already closed itself
+      this.sinks.sound.play('reminder', { level: step.level });
+    }
+    if (this.waitTap.poll(t)) this.sinks.sound.play('agentWaiting');
   }
 
   handlePomodoro(p: PomodoroState): void {
@@ -559,6 +694,8 @@ export class Brain {
 
   dragStart(): void {
     this.dragging = true;
+    this.acknowledge();
+    this.sinks.sound.play('lift');
     this.shake.reset();
     this.dizzyUntil = 0;
     this.sqy.vel += 1.5; // pick-up stretch
@@ -578,6 +715,7 @@ export class Brain {
     const t = this.t();
     if (this.shake.dizzy(t)) this.dizzyUntil = t + 2.5;
     this.dragging = false;
+    this.sinks.sound.play('drop');
     this.sqy.vel -= 3; // plop
     this.sqx.vel += 2;
     this.wakeFn();
@@ -681,6 +819,8 @@ export class Brain {
       const next = this.reminderQ.shift();
       if (next) this.showReminder(next);
     }
+    this.paperTick(dt, t);
+    this.soundTimers(t);
     this.select(t);
     resetIntent(this.i);
     this.state.update(dt, this);
@@ -883,6 +1023,8 @@ export class Brain {
     d = soonest(d, t, this.alertUntil);
     d = soonest(d, t, this.purrUntil);
     d = soonest(d, t, this.huntActiveUntil);
+    d = Math.min(d, this.nag.nextIn(t), this.waitTap.nextIn(t));
+    if (this.paperTarget > 0 || this.paper > 0) d = Math.min(d, 0.25);
     // pending requests that a busy higher state is holding back
     if (this.doneReq.pending || this.alertReq.pending || this.huntReq.pending) d = Math.min(d, 0.25);
     d = Math.min(d, this.state.nextEvent(this));

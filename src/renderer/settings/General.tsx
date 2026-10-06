@@ -1,5 +1,7 @@
-import { memo, useCallback, useEffect, useState } from 'react';
-import type { Settings, UpdateStatus } from '@shared/types';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import type { Settings, SoundCategory, UpdateStatus } from '@shared/types';
+import { SoundEngine } from '../overlay/engine/sound';
+import { CATEGORY_LABEL, SOUND_CATEGORIES, auditionPlan } from '../overlay/engine/soundPlan';
 import { VERSION } from './About';
 import { clamp } from './helpers';
 import { Section, Slider, TextField, TimeField, Toggle, useCtx } from './ui';
@@ -73,6 +75,55 @@ const UpdatesGroup = memo(function UpdatesGroup() {
   );
 });
 
+/** Per-category sound toggles with an audition button each (plays through this window's own engine). */
+const SoundGroup = memo(function SoundGroup() {
+  const { settings, save } = useCtx();
+  const engine = useRef<SoundEngine | null>(null);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(
+    () => () => {
+      timers.current.forEach(clearTimeout);
+      engine.current?.dispose();
+    },
+    [],
+  );
+  const audition = (cat: SoundCategory): void => {
+    const e = (engine.current ??= new SoundEngine());
+    e.configure({ enabled: true, volume: settings.sound.volume, character: settings.character });
+    timers.current.forEach(clearTimeout);
+    timers.current = auditionPlan(cat).map((st) =>
+      setTimeout(() => e.play(st.name, { ...st.opts, force: true }), st.at * 1000),
+    );
+  };
+  return (
+    <div className="group" data-testid="sound-categories">
+      {SOUND_CATEGORIES.map((cat) => (
+        <div key={cat}>
+          <Toggle
+            label={CATEGORY_LABEL[cat].label}
+            hint={CATEGORY_LABEL[cat].hint}
+            checked={settings.sound.categories[cat]}
+            onChange={(on) =>
+              save((s) => ({ sound: { ...s.sound, categories: { ...s.sound.categories, [cat]: on } } }))
+            }
+          />
+          <div className="actions">
+            <button
+              type="button"
+              className="btn"
+              disabled={settings.sound.volume <= 0}
+              onClick={() => audition(cat)}
+              aria-label={`Play ${CATEGORY_LABEL[cat].label} sounds`}
+            >
+              Play
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+});
+
 export const GeneralTab = memo(function GeneralTab() {
   const { settings, save, bridge, toast } = useCtx();
   const pct = (n: number): string => `${Math.round(n * 100)}%`;
@@ -121,7 +172,7 @@ export const GeneralTab = memo(function GeneralTab() {
 
       <Toggle
         label="Sound effects"
-        hint="Tiny synthesised chirps."
+        hint="Tiny synthesised clacks and chimes. The tray Mute item switches this off too."
         checked={settings.sound.enabled}
         onChange={(on) => save((s) => ({ sound: { ...s.sound, enabled: on } }))}
       />
@@ -134,6 +185,8 @@ export const GeneralTab = memo(function GeneralTab() {
         format={pct}
         onCommit={(n) => save((s) => ({ sound: { ...s.sound, volume: n } }))}
       />
+
+      <SoundGroup />
 
       <Toggle label="Start with Windows" hint="Launch CodeCritter when you sign in (installed app only)." checked={settings.autostart} onChange={(on) => save({ autostart: on })} />
 

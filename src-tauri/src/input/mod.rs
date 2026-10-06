@@ -4,6 +4,8 @@
 
 pub mod aggregator;
 mod hook;
+#[cfg(windows)]
+mod wheel;
 
 use crate::{state, winmgr};
 use aggregator::InputAggregator;
@@ -20,6 +22,8 @@ pub fn start(app: AppHandle) {
     let t0 = Instant::now();
     let agg = Arc::new(Mutex::new(InputAggregator::new(0.0, 1000.0, 10000.0)));
     let failed = hook::start(agg.clone(), t0);
+    #[cfg(windows)]
+    wheel::start(agg.clone(), t0);
     let debug = std::env::var_os("CRITTER_DEBUG").is_some();
 
     thread::spawn(move || {
@@ -46,8 +50,8 @@ pub fn start(app: AppHandle) {
                 }
                 if debug {
                     eprintln!(
-                        "[critter] input kps={} burst={} scroll={} mouse={} idle={}",
-                        s.keys_per_sec, s.key_burst, s.scroll_delta, s.mouse_speed, s.idle_ms
+                        "[critter] input kps={} burst={} scroll={} mouse={} clicks={} idle={}",
+                        s.keys_per_sec, s.key_burst, s.scroll_delta, s.mouse_speed, s.clicks_per_sec, s.idle_ms
                     );
                 }
                 winmgr::emit_overlay(
@@ -58,6 +62,7 @@ pub fn start(app: AppHandle) {
                         "keyBurst": s.key_burst,
                         "scrollDelta": s.scroll_delta,
                         "mouseSpeed": s.mouse_speed,
+                        "clicksPerSec": s.clicks_per_sec,
                         "idleMs": s.idle_ms,
                     }),
                 );

@@ -41,7 +41,8 @@
     "tauri": "tauri",
     "site:dev": "vite --config site/vite.config.ts",
     "site:build": "vite build --config site/vite.config.ts",
-    "site:preview": "vite preview --config site/vite.config.ts"
+    "site:preview": "vite preview --config site/vite.config.ts",
+    "site:clips": "node tools/clips/record.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.1",
@@ -60,6 +61,7 @@
     "@vitejs/plugin-react": "^5.2.0",
     "esbuild": "^0.28.2",
     "eslint": "^10.12.0",
+    "playwright-core": "^1.63.0",
     "prettier": "^3.9.9",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.0",

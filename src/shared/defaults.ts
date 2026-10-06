@@ -32,7 +32,7 @@ export const DEFAULT_SETTINGS: Settings = {
   scale: 2,
   opacity: 1,
   position: null,
-  sound: { enabled: true, volume: 0.5 },
+  sound: { enabled: true, volume: 0.5, categories: { typing: true, agents: true, reminders: true, pomodoro: true, other: true } },
   reactions: {
     eyeFollow: true,
     hunt: true,

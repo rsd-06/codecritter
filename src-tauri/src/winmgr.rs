@@ -25,7 +25,23 @@ pub const STAGE_H: f64 = 112.0;
 /// Chromium footprint small: no GPU process, one renderer, no background services. The first
 /// `--disable-features` group is Tauri's own default and must be kept.
 #[cfg(windows)]
-const WEBVIEW2_ARGS: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,CalculateNativeWinOcclusion,Translate,MediaRouter,OptimizationHints,msEdgeShopping,msWebAssist,msEdgeRewards,AutofillServerCommunication,BackForwardCache,NetworkServiceSandbox,AudioServiceOutOfProcess --disable-gpu --in-process-gpu --disable-background-networking --disable-component-update --disable-breakpad --disable-site-isolation-trials --renderer-process-limit=1 --enable-low-end-device-mode --disable-extensions --no-pings --js-flags=--max-old-space-size=64,--lite-mode";
+const WEBVIEW2_ARGS: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,CalculateNativeWinOcclusion,Translate,MediaRouter,OptimizationHints,msEdgeShopping,msWebAssist,msEdgeRewards,AutofillServerCommunication,BackForwardCache,NetworkServiceSandbox,AudioServiceOutOfProcess --disable-gpu --in-process-gpu --disable-background-networking --disable-component-update --disable-breakpad --disable-site-isolation-trials --renderer-process-limit=1 --enable-low-end-device-mode --disable-extensions --no-pings --autoplay-policy=no-user-gesture-required --js-flags=--max-old-space-size=64,--lite-mode";
+
+/// `WEBVIEW2_ARGS` plus dev-only extras from `CRITTER_WEBVIEW_EXTRA_ARGS` (e.g. `--remote-debugging-port=9333`).
+/// WebView2 also honours its own WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS env var; combining here keeps the
+/// built-in flags (notably the autoplay policy the click-through overlay needs for sound) in every case.
+#[cfg(windows)]
+fn webview2_args() -> String {
+    combine_args(WEBVIEW2_ARGS, std::env::var("CRITTER_WEBVIEW_EXTRA_ARGS").ok().as_deref())
+}
+
+#[cfg(any(windows, test))]
+fn combine_args(base: &str, extra: Option<&str>) -> String {
+    match extra.map(str::trim).filter(|e| !e.is_empty()) {
+        Some(e) => format!("{base} {e}"),
+        None => base.to_string(),
+    }
+}
 
 /// Fixed WebView2 profile folder (`%LOCALAPPDATA%\<identifier>\webview`), shared by both windows.
 /// Without it WebView2 would create `<exe>.WebView2` next to the executable (inside the install dir).
@@ -164,7 +180,7 @@ pub fn create_overlay(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     }
     #[cfg(windows)]
     {
-        b = b.additional_browser_args(WEBVIEW2_ARGS);
+        b = b.additional_browser_args(&webview2_args());
         if let Some(d) = webview_data_dir(app) {
             b = b.data_directory(d);
         }
@@ -359,7 +375,7 @@ pub fn open_settings(app: &AppHandle) {
         .visible(true);
     #[cfg(windows)]
     let b = {
-        let b = b.additional_browser_args(WEBVIEW2_ARGS);
+        let b = b.additional_browser_args(&webview2_args());
         match webview_data_dir(app) {
             Some(d) => b.data_directory(d),
             None => b,
@@ -379,6 +395,18 @@ mod tests {
     use super::*;
 
     const WORK: Rect = Rect { x: 0, y: 0, w: 1920, h: 1040 };
+
+    #[test]
+    #[cfg(windows)]
+    fn webview_args_allow_autoplay_and_combine_dev_extras() {
+        // the click-through overlay never gets a user gesture: without this flag its AudioContext stays suspended
+        assert!(WEBVIEW2_ARGS.contains("--autoplay-policy=no-user-gesture-required"));
+        assert!(WEBVIEW2_ARGS.contains("--disable-features="));
+        let both = combine_args(WEBVIEW2_ARGS, Some(" --remote-debugging-port=9333 "));
+        assert!(both.starts_with(WEBVIEW2_ARGS) && both.ends_with("--remote-debugging-port=9333"));
+        assert_eq!(combine_args(WEBVIEW2_ARGS, Some("")), WEBVIEW2_ARGS);
+        assert_eq!(combine_args(WEBVIEW2_ARGS, None), WEBVIEW2_ARGS);
+    }
 
     #[test]
     fn clamp_inside() {
