@@ -25,7 +25,7 @@ We pledge to make participation in this project a harassment-free experience for
 
 Maintainers may remove, edit or reject comments, commits, code, issues and other contributions that don't follow this Code of Conduct, and may temporarily or permanently ban contributors for behaviour they deem harmful.
 
-To report a problem, message the maintainer privately on Instagram ([@rsd.exe](https://instagram.com/rsd.exe)) or through GitHub ([@rsd-06](https://github.com/rsd-06)). Reports are kept confidential.
+To report a problem, message the maintainer privately on Instagram ([@rsd_exe](https://www.instagram.com/rsd_exe/)) or through GitHub ([@rsd-06](https://github.com/rsd-06)). Reports are kept confidential.
 
 ## Attribution
 

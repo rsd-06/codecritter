@@ -95,7 +95,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] Landing page (single page, interactive, clean + vibrant, minimal): hero with live character demo, all features, AI agents, download button → latest release, contact details, open-source/contribute CTA; deployed on Vercel
 - [x] Launch video via brag skill; embedded on site + README
 - [x] Open-source hygiene: issue/PR templates, CODE_OF_CONDUCT, good-first-issue labels, Discussions on
-- [x] Launch kit for X / Threads / Instagram (rsd.exe): post drafts, thread, reel script + captions, posting schedule; Show HN / Reddit / Product Hunt drafts (user posts)
+- [x] Launch kit for X / Threads / Instagram (rsd_exe): post drafts, thread, reel script + captions, posting schedule; Show HN / Reddit / Product Hunt drafts (user posts)
 
 ## Art & eye-tracking pass [art agent] - owns overlay/characters, overlay/engine, playground, tools media
 - [x] Stitch likeness: wide high ears (notch on left ear, navy interior + pink inner), glossy tilted oval eyes with one highlight in darker patches, big navy nose, very wide mouths, crown marking + stripes, chest patch, stubby arms with dark claws

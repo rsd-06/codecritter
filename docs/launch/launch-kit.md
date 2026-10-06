@@ -52,7 +52,7 @@ Reply 2: > Windows installer is 1.5 MB. Mac/Linux folks: it builds from source a
 
 ---
 
-## Instagram (@rsd.exe)
+## Instagram (@rsd_exe)
 
 ### Reel (15–25 s, vertical 9:16)
 Use the brag video re-cut to vertical, or record your real screen:
