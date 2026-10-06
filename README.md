@@ -6,7 +6,7 @@
 
 **A tiny pixel companion that lives on your desktop, watches you code, and reacts to your AI agents.**
 
-Free, open source, no telemetry. Windows installer is 1.5 MB.
+Free, open source, no telemetry. Windows installer is about 2 MB.
 
 [**Download for Windows**](https://github.com/rsd-06/codecritter/releases/latest) · [Website](https://codecritter.vercel.app) · [AI agents](docs/agents.md) · [Make a character](docs/characters.md) · [Contributing](CONTRIBUTING.md)
 
@@ -92,7 +92,7 @@ Manual setup, exact file formats, the HTTP API and troubleshooting: [docs/agents
 
 Grab the latest build for your OS from the [Releases page](https://github.com/rsd-06/codecritter/releases):
 
-- **Windows**: `CodeCritter_*_x64-setup.exe` (installer, per-user, no admin needed; about 1.5 MB) or `CodeCritter_*_x64_en-US.msi`. The installer downloads the Microsoft WebView2 runtime only if your PC lacks it (it ships with Windows 11 and current Windows 10).
+- **Windows**: `CodeCritter_*_x64-setup.exe` (installer, per-user, no admin needed; about 2.1 MB) or `CodeCritter_*_x64_en-US.msi`. The installer downloads the Microsoft WebView2 runtime only if your PC lacks it (it ships with Windows 11 and current Windows 10).
 - **macOS**: `CodeCritter_*.dmg` (universal)
 - **Linux**: `.AppImage` (`chmod +x`, run) or `.deb`
 
@@ -147,7 +147,7 @@ Efficiency is a design goal: no animation loop while idle (a dirty-flag schedule
 
 | Metric | Result |
 | --- | --- |
-| Installer size | NSIS 1.5 MB, MSI 2.1 MB |
+| Installer size | NSIS 2.1 MB, MSI 2.9 MB |
 | CPU (idle) | ~0.0% |
 | Private working set (the Task Manager "Memory" column, app + WebView2 processes) | ~60 MB |
 | Private bytes (committed, unshared) | ~91 MB |
