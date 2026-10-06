@@ -111,4 +111,4 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] Signed auto-update (updater + process plugins, idle/quit install, Updated bubble, settings + tray)
 - [x] Scroll fix: exact wheel hook (small touchpad deltas), direction-aware paper, speed scaling
 - [x] Sound redesign + autoplay fix, click frenzy, escalating reminders, per-category toggles
-- [ ] Release v0.2.1: version bumped; tag and publish the draft so latest.json goes live (maintainer)
+- [x] Release v0.2.1: version bumped; tag and publish the draft so latest.json goes live (maintainer)
