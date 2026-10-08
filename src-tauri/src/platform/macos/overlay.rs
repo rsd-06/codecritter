@@ -34,6 +34,17 @@ fn apply(app: &AppHandle) {
             let _: () = msg_send![win, setHasShadow: Bool::NO];
             let _: () = msg_send![win, setHidesOnDeactivate: Bool::NO];
             let _: () = msg_send![win, setCanHide: Bool::NO];
+            if std::env::var_os("CRITTER_DEBUG").is_some() {
+                let (lvl, beh): (isize, usize) = (msg_send![win, level], msg_send![win, collectionBehavior]);
+                let (opaque, shadow, ignores): (Bool, Bool, Bool) =
+                    (msg_send![win, isOpaque], msg_send![win, hasShadow], msg_send![win, ignoresMouseEvents]);
+                eprintln!(
+                    "[critter] overlay NSWindow level={lvl} behavior={beh:#x} opaque={} shadow={} ignoresMouse={}",
+                    opaque.as_bool(),
+                    shadow.as_bool(),
+                    ignores.as_bool()
+                );
+            }
         }
     });
 }

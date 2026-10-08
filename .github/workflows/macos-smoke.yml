@@ -1,0 +1,88 @@
+name: macOS smoke
+
+# Builds the universal .app/.dmg once (Apple Silicon runner), then installs and launches it on BOTH an
+# Apple Silicon (macos-14) and an Intel (macos-15-intel; GitHub retired macos-13) runner, checks the ad-hoc
+# signature / LSUIElement / health endpoint / overlay window, and uploads screenshots + logs as artifacts.
+# CI runners have no Accessibility / Input Monitoring grant: the app must still run (input disabled).
+on:
+  push:
+    branches: ['platform/**']
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - name: Build universal .app + .dmg
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          EXTRA=()
+          # updater artifacts need the signing key; forks / PRs without it still get a smoke build
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then EXTRA=(--config '{"bundle":{"createUpdaterArtifacts":false}}'); fi
+          npx tauri build --target universal-apple-darwin --bundles app,dmg "${EXTRA[@]}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CodeCritter-universal-dmg
+          path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+
+  smoke:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            arch: arm64
+          - os: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: CodeCritter-universal-dmg
+          path: dmg
+      - name: Install, launch and check the app
+        run: bash tools/macos-smoke.sh "$(ls dmg/*.dmg | head -1)" smoke-out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-smoke-${{ matrix.arch }}
+          path: smoke-out
+          if-no-files-found: warn
+
+  rust-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm run build
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
