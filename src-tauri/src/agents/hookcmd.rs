@@ -116,7 +116,16 @@ pub fn prepare_with(opts: &PrepareOpts) -> std::io::Result<HookCmdResult> {
 
 /// Production entry point: real PATH / platform / filesystem.
 pub fn prepare(dir: &Path, hook_source: Option<&Path>) -> std::io::Result<HookCmdResult> {
-    let path_var = std::env::var("PATH").or_else(|_| std::env::var("Path")).unwrap_or_default();
+    #[allow(unused_mut)]
+    let mut path_var = std::env::var("PATH").or_else(|_| std::env::var("Path")).unwrap_or_default();
+    // A Finder-launched .app inherits only /usr/bin:/bin:...; add where Homebrew / Volta usually put `node`.
+    #[cfg(target_os = "macos")]
+    {
+        path_var.push_str(":/opt/homebrew/bin:/usr/local/bin");
+        if let Some(h) = dirs::home_dir() {
+            path_var.push_str(&format!(":{}/.volta/bin", h.display()));
+        }
+    }
     prepare_with(&PrepareOpts {
         dir,
         hook_source,

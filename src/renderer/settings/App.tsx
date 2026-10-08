@@ -6,6 +6,7 @@ import { AgentsTab } from './Agents';
 import { MessagesTab, PomodoroTab, ReactionsTab, RemindersTab } from './Basics';
 import { CharacterTab } from './Character';
 import { GeneralTab } from './General';
+import { InputAccessBanner } from './InputAccessBanner';
 import type { Patch } from './helpers';
 import { SettingsCtx, type Ctx } from './ui';
 
@@ -153,6 +154,7 @@ export function App(props: { bridge: SettingsBridge; mock?: boolean }) {
           </div>
         </nav>
         <main id="panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="main">
+          <InputAccessBanner bridge={bridge} />
           <Active />
         </main>
         <div className="toasts" role="status" aria-live="polite">

@@ -138,3 +138,16 @@ pub async fn install_update(app: AppHandle) -> Result<(), String> {
 pub fn update_status() -> Value {
     updater::status()
 }
+
+/// "granted" | "denied" | "not-needed": whether the OS lets CodeCritter see global keyboard/mouse activity
+/// (macOS Input Monitoring). Counts only; key identities are never read.
+#[tauri::command]
+pub fn input_access() -> &'static str {
+    crate::platform::input_access()
+}
+
+/// Opens the OS pane where the user grants that access (no-op where none is needed).
+#[tauri::command]
+pub fn open_input_access() {
+    crate::platform::open_input_access_settings();
+}

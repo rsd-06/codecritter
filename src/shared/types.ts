@@ -169,4 +169,11 @@ export interface SettingsBridge {
   /** Download (if needed), install and relaunch. */
   installUpdate(): Promise<void>;
   updateStatus(): Promise<UpdateStatus>;
+  /** Whether the OS lets us observe global input (macOS Input Monitoring). Absent in the mock/playground. */
+  inputAccess?(): Promise<InputAccess>;
+  /** Open the OS pane where that access is granted. */
+  openInputAccess?(): Promise<void>;
+  onInputAccess?(cb: (s: InputAccess) => void): () => void;
 }
+
+export type InputAccess = 'granted' | 'denied' | 'not-needed';

@@ -17,6 +17,7 @@ pub mod agents;
 pub mod cursor;
 pub mod input;
 pub mod peek;
+pub mod platform;
 pub mod scheduler;
 pub mod sync;
 
@@ -75,6 +76,8 @@ pub fn run() {
             commands::check_update,
             commands::install_update,
             commands::update_status,
+            commands::input_access,
+            commands::open_input_access,
         ])
         .setup(|app| {
             let handle = app.handle().clone();
@@ -90,6 +93,7 @@ pub fn run() {
             #[cfg(debug_assertions)]
             selftest::maybe_start(handle.clone());
 
+            platform::start(&handle);
             input::start(handle.clone());
             cursor::start(handle.clone());
             peek::start(handle.clone());

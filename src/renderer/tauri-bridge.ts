@@ -9,6 +9,7 @@ import type {
   AgentEventType,
   AgentId,
   CursorSample,
+  InputAccess,
   InputSample,
   OverlayBridge,
   PomodoroState,
@@ -78,6 +79,9 @@ export class TauriBridge implements OverlayBridge, SettingsBridge {
   checkUpdate = (): Promise<UpdateInfo> => invoke<UpdateInfo>('check_update');
   installUpdate = (): Promise<void> => invoke('install_update');
   updateStatus = (): Promise<UpdateStatus> => invoke<UpdateStatus>('update_status');
+  inputAccess = (): Promise<InputAccess> => invoke<InputAccess>('input_access');
+  openInputAccess = (): Promise<void> => invoke('open_input_access');
+  onInputAccess = (cb: (s: InputAccess) => void) => on('critter:input-access', cb);
 }
 
 /** Route `window.open(https://...)` (settings About links) to the system browser. */

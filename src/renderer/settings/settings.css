@@ -617,3 +617,18 @@ a {
     transition: none !important;
   }
 }
+
+.access-banner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--acc);
+  border-radius: 6px;
+  background: var(--panel2);
+}
+.access-banner p {
+  margin: 4px 0 0;
+}

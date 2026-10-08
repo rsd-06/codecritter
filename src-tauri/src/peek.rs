@@ -218,7 +218,12 @@ fn fullscreen_app_active(app: &AppHandle) -> bool {
     verdict
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+fn fullscreen_app_active(app: &AppHandle) -> bool {
+    crate::platform::macos::fullscreen::active(app)
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
 fn fullscreen_app_active(_app: &AppHandle) -> bool {
     false
 }

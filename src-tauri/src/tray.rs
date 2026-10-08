@@ -131,7 +131,8 @@ pub fn create(app: &AppHandle) -> tauri::Result<TrayIcon> {
     let mut b = TrayIconBuilder::with_id(TRAY_ID)
         .tooltip("CodeCritter")
         .menu(&build_menu(app)?)
-        .show_menu_on_left_click(false)
+        // macOS menu-bar items open their menu on a plain click; Windows/Linux keep right-click only.
+        .show_menu_on_left_click(cfg!(target_os = "macos"))
         .on_tray_icon_event(|tray, event| {
             if let TrayIconEvent::DoubleClick { .. } = event {
                 winmgr::open_settings(tray.app_handle());

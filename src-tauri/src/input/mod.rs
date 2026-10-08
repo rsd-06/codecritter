@@ -3,6 +3,7 @@
 //! Silent while reactions are paused / the companion is hidden; silent when nothing changes.
 
 pub mod aggregator;
+#[cfg(not(target_os = "macos"))]
 mod hook;
 #[cfg(windows)]
 mod wheel;
@@ -21,6 +22,10 @@ use tauri::AppHandle;
 pub fn start(app: AppHandle) {
     let t0 = Instant::now();
     let agg = Arc::new(Mutex::new(InputAggregator::new(0.0, 1000.0, 10000.0)));
+    // macOS: counting event tap + Input Monitoring permission flow (platform/macos/input.rs); elsewhere rdev.
+    #[cfg(target_os = "macos")]
+    let failed = crate::platform::macos::input::start(agg.clone(), t0, app.clone());
+    #[cfg(not(target_os = "macos"))]
     let failed = hook::start(agg.clone(), t0);
     #[cfg(windows)]
     wheel::start(agg.clone(), t0);
