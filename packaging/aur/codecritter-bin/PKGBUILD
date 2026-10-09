@@ -1,0 +1,30 @@
+# Maintainer: rsd-06 <rsudharshan2006@gmail.com>
+# Installs the official CodeCritter release .deb (built on Ubuntu 22.04) against the system WebKitGTK.
+# Bump with packaging/aur/update.sh <version> (rewrites pkgver + sha256sums, regenerates .SRCINFO).
+pkgname=codecritter-bin
+_pkgname=codecritter
+pkgver=0.2.1
+pkgrel=1
+pkgdesc='Open-source pixel desktop companion (Stitch & Yoda) for developers - prebuilt release'
+arch=('x86_64')
+url='https://github.com/rsd-06/codecritter'
+license=('MIT')
+depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator' 'xdotool' 'libxtst' 'libx11' 'libxi' 'openssl')
+optdepends=(
+  'nodejs: run agent hooks through the bundled critter-hook.mjs (a curl script is used otherwise)'
+  'jq: include the prompt text in agent hook events'
+  'xorg-xwayland: required on Wayland sessions (CodeCritter runs through XWayland)'
+)
+provides=("${_pkgname}=${pkgver}")
+conflicts=("${_pkgname}")
+options=('!strip' '!debug')
+source_x86_64=("${_pkgname}-${pkgver}-amd64.deb::${url}/releases/download/v${pkgver}/CodeCritter_${pkgver}_amd64.deb")
+sha256sums_x86_64=('799ebf3885259324ce6ac587003a74b56e7ce7461288a4f12a4574557344f00c')
+
+package() {
+  cd "${srcdir}"
+  # A .deb is an ar archive; makepkg does not unpack it.
+  bsdtar -xf "${_pkgname}-${pkgver}-amd64.deb" data.tar.gz
+  bsdtar -xf data.tar.gz -C "${pkgdir}"
+  chmod -R go-w "${pkgdir}"
+}

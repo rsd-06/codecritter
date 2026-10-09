@@ -55,7 +55,21 @@
     },
     "linux": {
       "deb": {
-        "section": "utils"
+        "section": "utils",
+        "priority": "optional",
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "libayatana-appindicator3-1 | libappindicator3-1",
+          "libxdo3",
+          "libxtst6",
+          "libx11-6",
+          "libxi6"
+        ],
+        "recommends": ["dbus-x11", "xdg-utils"]
+      },
+      "rpm": {
+        "depends": ["webkit2gtk4.1", "libayatana-appindicator-gtk3", "libxdo", "libXtst"]
       },
       "appimage": {
         "bundleMediaFramework": false
