@@ -47,6 +47,36 @@ jobs:
           workspaces: src-tauri
       - run: npm ci
       - run: npm test
+      # Real macOS signing + notarization, only when the secrets exist. Exporting nothing keeps the ad-hoc identity
+      # from tauri.conf.json (empty APPLE_* variables would make the bundler try to import an empty certificate).
+      - name: Enable Apple signing and notarization (when configured)
+        if: runner.os == 'macOS'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          export_var() { { echo "$1<<CC_EOF"; printf '%s
+' "$2"; echo "CC_EOF"; } >> "$GITHUB_ENV"; }
+          if [ -n "$APPLE_CERTIFICATE" ] && [ -n "$APPLE_CERTIFICATE_PASSWORD" ] && [ -n "$APPLE_SIGNING_IDENTITY" ]; then
+            export_var APPLE_CERTIFICATE "$APPLE_CERTIFICATE"
+            export_var APPLE_CERTIFICATE_PASSWORD "$APPLE_CERTIFICATE_PASSWORD"
+            export_var APPLE_SIGNING_IDENTITY "$APPLE_SIGNING_IDENTITY"
+            echo "macOS: Developer ID signing enabled"
+            if [ -n "$APPLE_ID" ] && [ -n "$APPLE_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ]; then
+              export_var APPLE_ID "$APPLE_ID"
+              export_var APPLE_PASSWORD "$APPLE_PASSWORD"
+              export_var APPLE_TEAM_ID "$APPLE_TEAM_ID"
+              echo "macOS: notarization enabled"
+            else
+              echo "macOS: notarization skipped (APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID not all set)"
+            fi
+          else
+            echo "macOS: no Apple certificate secrets; building with the ad-hoc identity"
+          fi
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -55,8 +85,18 @@ jobs:
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v__VERSION__-{0}', github.run_number) }}
           releaseName: 'CodeCritter v__VERSION__'
-          releaseBody: 'Unsigned build: Windows SmartScreen / macOS Gatekeeper will warn on first launch. See the README for install notes.'
+          releaseBody: 'Windows is unsigned (SmartScreen warns); macOS is ad-hoc signed unless Developer ID secrets are set (Gatekeeper warns on first launch). See the README and docs/macos.md for install notes.'
           releaseDraft: true
           prerelease: false
           includeUpdaterJson: true
           args: ${{ matrix.args }}
+      - name: Check the macOS artifacts
+        if: runner.os == 'macOS'
+        run: |
+          B=src-tauri/target/universal-apple-darwin/release/bundle
+          ls -R "$B" | head -30
+          ls "$B"/dmg/*_universal.dmg "$B"/macos/*.app.tar.gz
+          [ -z "$TAURI_SIGNING_PRIVATE_KEY" ] || ls "$B"/macos/*.app.tar.gz.sig
+          codesign -dv --verbose=2 "$B"/macos/CodeCritter.app 2>&1 | grep -E "Signature|Authority|TeamIdentifier" || true
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}

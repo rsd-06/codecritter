@@ -112,3 +112,13 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] Scroll fix: exact wheel hook (small touchpad deltas), direction-aware paper, speed scaling
 - [x] Sound redesign + autoplay fix, click frenzy, escalating reminders, per-category toggles
 - [x] Release v0.2.1: version bumped; tag and publish the draft so latest.json goes live (maintainer)
+
+## v0.3 macOS
+- [x] Overlay: transparent, no shadow, status level, canJoinAllSpaces + fullScreenAuxiliary (verified on macOS 14 arm64 and macOS 15 Intel CI: window layer 25, transparent in screenshots)
+- [x] Input: own listen-only CGEventTap (counts only) replaces rdev on macOS; Input Monitoring first-run bubble + Settings banner + auto-start once granted
+- [x] Peek: fullscreen detection via CGWindowList bounds (pure decision fn + tests)
+- [x] Tray template icon + left click opens the menu; Cmd+Option shortcuts; LaunchAgent autostart; hook script in Resources/bin
+- [x] Ad-hoc signing (signingIdentity "-"); release.yml signs + notarizes automatically when APPLE_* secrets exist
+- [x] CI: .github/workflows/macos-smoke.yml (macos-14 + macos-15-intel), tools/macos-smoke.sh
+- [x] Homebrew cask packaging/homebrew/codecritter.rb, docs/macos.md
+- [ ] Maintainer: Apple Developer account (signing + notarization secrets), create rsd-06/homebrew-tap and publish the cask, test on a real Mac (keystroke reactions, Spaces, fullscreen peek, sound)

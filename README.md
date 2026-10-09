@@ -93,10 +93,10 @@ Manual setup, exact file formats, the HTTP API and troubleshooting: [docs/agents
 Grab the latest build for your OS from the [Releases page](https://github.com/rsd-06/codecritter/releases):
 
 - **Windows**: `CodeCritter_*_x64-setup.exe` (installer, per-user, no admin needed; about 2.1 MB) or `CodeCritter_*_x64_en-US.msi`. The installer downloads the Microsoft WebView2 runtime only if your PC lacks it (it ships with Windows 11 and current Windows 10).
-- **macOS**: `CodeCritter_*.dmg` (universal)
+- **macOS**: `CodeCritter_*_universal.dmg` (Apple Silicon + Intel, macOS 13+), or `brew install --cask rsd-06/tap/codecritter` once the tap is published. See [docs/macos.md](docs/macos.md) for the first-run steps (Input Monitoring permission).
 - **Linux**: `.AppImage` (`chmod +x`, run) or `.deb`
 
-> Builds are **unsigned** for now. Windows SmartScreen shows "Windows protected your PC": click **More info > Run anyway**. On macOS right-click the app, choose **Open**, then confirm (or run `xattr -dr com.apple.quarantine /Applications/CodeCritter.app`). CodeCritter is a menu-bar/tray app and has no Dock icon.
+> Windows builds are **unsigned** and macOS builds are **ad-hoc signed, not notarized** for now. Windows SmartScreen shows "Windows protected your PC": click **More info > Run anyway**. On macOS right-click the app, choose **Open**, then confirm (or run `xattr -dr com.apple.quarantine /Applications/CodeCritter.app`). CodeCritter is a menu-bar/tray app and has no Dock icon.
 
 ### Build from source
 
@@ -162,7 +162,7 @@ Honest note: the WebView2 runtime is shared with Edge and other apps, so the sha
 - More built-in characters and a drop-in character pack loader
 - Per-monitor and per-app behaviour rules
 - Localised strings (the text layer is already i18n-ready)
-- macOS/Linux peek detection (fullscreen heuristics) parity with Windows
+- Linux peek detection (fullscreen heuristics) parity with Windows and macOS
 
 ## Contributing
 

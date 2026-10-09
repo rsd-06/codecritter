@@ -141,8 +141,8 @@ fn run_tap(agg: Arc<Mutex<InputAggregator>>, t0: Instant, running: &AtomicBool) 
     Ok(())
 }
 
-const BUBBLE: &str = "I need Input Monitoring to feel your typing. I only count keystrokes, never which keys. \
-Open Settings > Privacy & Security > Input Monitoring and switch CodeCritter on.";
+// The overlay fits about 50 characters of a message; the Settings banner carries the full explanation.
+const BUBBLE: &str = "Allow Input Monitoring so I feel you type!";
 
 /// First run only: remember (marker file) that the explanation was shown so it is not repeated at every launch.
 fn first_prompt_due(app: &AppHandle) -> bool {
