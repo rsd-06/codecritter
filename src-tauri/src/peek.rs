@@ -4,7 +4,8 @@
 //! minimised) whose frame covers the whole monitor (rcMonitor, so a maximised window with a visible
 //! taskbar never counts). The geometry check catches browser F11 fullscreen, which Firefox-family
 //! browsers do not report through QUNS. No window titles or process names are ever read (only the
-//! window class, to skip the shell, and the pid, to skip our own windows). Other OSes: no-op
+//! window class, to skip the shell, and the pid, to skip our own windows). Linux: X11 EWMH (`_NET_ACTIVE_WINDOW` + `_NET_WM_STATE_FULLSCREEN`, geometry fallback; see
+//! `platform::linux::fullscreen`, XWayland sees X11 clients only). macOS: no-op
 //! detector (manual peek only). While peeking the overlay is slid with `winmgr::set_peek_position`
 //! so `PEEK_VISIBLE_FRACTION` of it stays on screen at the configured edge; the pre-peek position
 //! is restored on unpeek and never persisted.
@@ -139,6 +140,51 @@ pub fn decide_fullscreen(quns: i32, fg: Option<&FgWindow>, overlay_monitor: Opti
     }
 }
 
+/// Facts about the X11 active window (EWMH), gathered by `platform::linux::fullscreen`.
+#[derive(Clone, Copy, Debug)]
+pub struct X11Fg {
+    /// `_NET_WM_STATE_FULLSCREEN` is set.
+    pub fullscreen_state: bool,
+    /// `_NET_WM_STATE_HIDDEN` (minimised / other workspace).
+    pub hidden: bool,
+    /// Desktop or dock window type.
+    pub shell: bool,
+    /// Belongs to this process.
+    pub own: bool,
+    /// The window manager draws a title bar (`_NET_FRAME_EXTENTS` top > 0).
+    pub captioned: bool,
+    /// Client area in root coordinates.
+    pub frame: Rect,
+}
+
+/// Pure: fullscreen verdict on X11. The WM's fullscreen flag counts when the window is on the overlay's
+/// monitor; without the flag, the same geometry rule as Windows applies (covers a whole monitor, no caption).
+pub fn decide_x11(fg: Option<&X11Fg>, monitors: &[Rect], overlay_monitor: Option<Rect>) -> bool {
+    let Some(f) = fg else { return false };
+    if f.hidden || f.shell || f.own {
+        return false;
+    }
+    let (cx, cy) = ((f.frame.0 + f.frame.2) / 2, (f.frame.1 + f.frame.3) / 2);
+    let mon = monitors.iter().copied().find(|m| cx >= m.0 && cx < m.2 && cy >= m.1 && cy < m.3);
+    if f.fullscreen_state {
+        return match (mon, overlay_monitor) {
+            (Some(m), Some(o)) => m == o,
+            _ => true,
+        };
+    }
+    let Some(monitor) = mon else { return false };
+    let w = FgWindow {
+        visible: true,
+        minimized: false,
+        ours: false,
+        shell: false,
+        captioned: f.captioned,
+        frame: f.frame,
+        monitor,
+    };
+    decide_fullscreen(0, Some(&w), overlay_monitor)
+}
+
 #[cfg(windows)]
 fn foreground_window() -> Option<FgWindow> {
     use windows::Win32::Foundation::{HWND, RECT};
@@ -196,7 +242,7 @@ fn quns_state() -> i32 {
 }
 
 /// rcMonitor-equivalent rect of the monitor under the overlay's centre.
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "linux"))]
 fn overlay_monitor_rect(app: &AppHandle) -> Option<Rect> {
     let w = winmgr::overlay(app)?;
     let (p, s) = (w.outer_position().ok()?, w.outer_size().ok()?);
@@ -218,7 +264,24 @@ fn fullscreen_app_active(app: &AppHandle) -> bool {
     verdict
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "linux")]
+fn fullscreen_app_active(app: &AppHandle) -> bool {
+    let fg = crate::platform::linux::fullscreen::query();
+    let om = overlay_monitor_rect(app);
+    let monitors: Vec<Rect> = app
+        .available_monitors()
+        .unwrap_or_default()
+        .iter()
+        .map(|m| (m.position().x, m.position().y, m.position().x + m.size().width as i32, m.position().y + m.size().height as i32))
+        .collect();
+    let verdict = decide_x11(fg.as_ref(), &monitors, om);
+    if std::env::var_os("CRITTER_DEBUG").is_some() {
+        eprintln!("[critter] peek poll: x11 fg={fg:?} overlay_monitor={om:?} -> fullscreen={verdict}");
+    }
+    verdict
+}
+
+#[cfg(not(any(windows, target_os = "linux")))]
 fn fullscreen_app_active(_app: &AppHandle) -> bool {
     false
 }
@@ -325,6 +388,44 @@ mod tests {
     use super::*;
 
     const D: (i32, i32, i32, i32) = (0, 0, 1920, 1080);
+
+    fn x(frame: Rect) -> X11Fg {
+        X11Fg { fullscreen_state: false, hidden: false, shell: false, own: false, captioned: false, frame }
+    }
+
+    #[test]
+    fn x11_wm_fullscreen_flag_counts_on_the_overlay_monitor() {
+        let second = (1920, 0, 3840, 1080);
+        let mut f = x((0, 0, 1280, 720)); // flagged but smaller than the monitor (e.g. a game with a fixed mode)
+        f.fullscreen_state = true;
+        assert!(decide_x11(Some(&f), &[D, second], Some(D)));
+        assert!(!decide_x11(Some(&f), &[D, second], Some(second)));
+        assert!(decide_x11(Some(&f), &[], None)); // unknown monitors: trust the WM
+    }
+
+    #[test]
+    fn x11_geometry_fallback_needs_full_cover_and_no_caption() {
+        assert!(decide_x11(Some(&x(D)), &[D], Some(D)));
+        let mut cap = x(D);
+        cap.captioned = true; // maximised normal window with a title bar
+        assert!(!decide_x11(Some(&cap), &[D], Some(D)));
+        assert!(!decide_x11(Some(&x((0, 0, 1920, 1040))), &[D], Some(D))); // panel visible
+    }
+
+    #[test]
+    fn x11_ignores_hidden_shell_own_and_missing() {
+        for edit in [
+            (|f: &mut X11Fg| f.hidden = true) as fn(&mut X11Fg),
+            |f| f.shell = true,
+            |f| f.own = true,
+        ] {
+            let mut f = x(D);
+            f.fullscreen_state = true;
+            edit(&mut f);
+            assert!(!decide_x11(Some(&f), &[D], Some(D)));
+        }
+        assert!(!decide_x11(None, &[D], Some(D)));
+    }
 
     #[test]
     fn quns_states_2_3_4_are_fullscreen() {

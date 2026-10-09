@@ -17,10 +17,13 @@ pub mod agents;
 pub mod cursor;
 pub mod input;
 pub mod peek;
+pub mod platform;
 pub mod scheduler;
 pub mod sync;
 
 pub fn run() {
+    #[cfg(target_os = "linux")]
+    platform::linux::early_init();
     let mut builder = tauri::Builder::default();
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -83,7 +86,12 @@ pub fn run() {
 
             store::init(&handle);
             winmgr::create_overlay(&handle)?;
-            tray::create(&handle)?;
+            if let Err(e) = tray::create(&handle) {
+                // Never abort startup over a missing tray (e.g. GNOME without the AppIndicator extension).
+                eprintln!("[tray] could not create tray icon: {e}");
+                #[cfg(target_os = "linux")]
+                platform::linux::hints::tray_failed(&handle);
+            }
             shortcuts::register(&handle);
             autostart::init(&handle);
             winmgr::watch_displays(handle.clone());
@@ -91,6 +99,8 @@ pub fn run() {
             selftest::maybe_start(handle.clone());
 
             input::start(handle.clone());
+            #[cfg(target_os = "linux")]
+            platform::linux::hints::start(handle.clone());
             cursor::start(handle.clone());
             peek::start(handle.clone());
             agents::start(handle.clone());

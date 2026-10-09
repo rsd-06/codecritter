@@ -2,12 +2,24 @@
 
 use crate::store;
 use tauri::AppHandle;
+#[cfg(not(target_os = "linux"))]
 use tauri_plugin_autostart::ManagerExt;
 
 pub fn apply(app: &AppHandle, enabled: bool) {
-    if cfg!(debug_assertions) || cfg!(target_os = "linux") {
+    if cfg!(debug_assertions) {
         return;
     }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = app;
+        crate::platform::linux::autostart::apply(enabled);
+    }
+    #[cfg(not(target_os = "linux"))]
+    apply_plugin(app, enabled);
+}
+
+#[cfg(not(target_os = "linux"))]
+fn apply_plugin(app: &AppHandle, enabled: bool) {
     let launch = app.autolaunch();
     let current = launch.is_enabled().unwrap_or(false);
     if current == enabled {

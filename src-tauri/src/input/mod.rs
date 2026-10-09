@@ -24,6 +24,8 @@ pub fn start(app: AppHandle) {
     let failed = hook::start(agg.clone(), t0);
     #[cfg(windows)]
     wheel::start(agg.clone(), t0);
+    #[cfg(all(target_os = "linux", feature = "evdev"))]
+    crate::platform::linux::evdev::start(agg.clone(), t0);
     let debug = std::env::var_os("CRITTER_DEBUG").is_some();
 
     thread::spawn(move || {
@@ -32,7 +34,7 @@ pub fn start(app: AppHandle) {
             thread::sleep(Duration::from_millis(100));
             let now = t0.elapsed().as_secs_f64() * 1000.0;
             let mut a = agg.lock();
-            if failed.load(Ordering::Relaxed) {
+            if failed.load(Ordering::Relaxed) || crate::platform::evdev_active() {
                 // Cursor-only fallback: derive mouse speed from polled positions.
                 if let Ok(c) = app.cursor_position() {
                     if last_cursor != Some((c.x, c.y)) {

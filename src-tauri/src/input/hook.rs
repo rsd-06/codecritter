@@ -23,6 +23,12 @@ pub fn start(agg: Arc<Mutex<InputAggregator>>, t0: Instant) -> Arc<AtomicBool> {
             if !matches!(ev.event_type, EventType::KeyRelease(_) | EventType::ButtonRelease(_)) {
                 crate::scheduler::note_input_activity();
             }
+            // Optional evdev backend (Linux) counts keys / buttons / wheel itself: don't double count.
+            if crate::platform::evdev_active()
+                && matches!(ev.event_type, EventType::KeyPress(_) | EventType::ButtonPress(_) | EventType::Wheel { .. })
+            {
+                return;
+            }
             match ev.event_type {
                 EventType::KeyPress(_) => agg.lock().key_down(now),
                 // rdev: positive delta_y = wheel up; the contract is +down.

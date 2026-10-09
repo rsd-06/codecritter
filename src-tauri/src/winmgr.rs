@@ -186,6 +186,8 @@ pub fn create_overlay(app: &AppHandle) -> tauri::Result<WebviewWindow> {
         }
     }
     let win = b.build()?;
+    #[cfg(target_os = "linux")]
+    crate::platform::linux::tune_webview(&win);
     if let Some(r) = rect {
         let _ = win.set_position(PhysicalPosition::new(r.x, r.y));
     }
@@ -384,6 +386,8 @@ pub fn open_settings(app: &AppHandle) {
     let built = b.build();
     match built {
         Ok(w) => {
+            #[cfg(target_os = "linux")]
+            crate::platform::linux::tune_webview(&w);
             let _ = w.set_focus();
         }
         Err(e) => eprintln!("[windows] settings window: {e}"),

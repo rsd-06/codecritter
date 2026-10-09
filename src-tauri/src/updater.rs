@@ -16,7 +16,24 @@ use std::{
     time::{Duration, Instant},
 };
 use tauri::{AppHandle, Manager};
+use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_updater::{Update, UpdaterExt};
+
+/// Linux packages (.deb / .rpm / AUR) are managed by the package manager and cannot be replaced in place:
+/// only AppImages (and every other OS) download + install themselves. Package installs just announce the
+/// update and open the download page.
+fn self_updating() -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        crate::platform::linux::install::can_self_update()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        true
+    }
+}
+
+const DOWNLOAD_PAGE: &str = "https://github.com/rsd-06/codecritter/releases/latest";
 
 pub const FIRST_CHECK_AFTER: Duration = Duration::from_secs(30);
 pub const CHECK_EVERY: Duration = Duration::from_secs(6 * 3600);
@@ -112,7 +129,7 @@ async fn check_inner(app: &AppHandle, download: bool) -> Result<Value, String> {
                     g.bytes = None;
                     g.update = Some(u);
                 }
-                let dl = if download && g.bytes.is_none() { g.update.clone() } else { None };
+                let dl = if download && self_updating() && g.bytes.is_none() { g.update.clone() } else { None };
                 (Ok(info), dl)
             }
         }
@@ -139,6 +156,10 @@ fn marker_path(app: &AppHandle) -> Option<std::path::PathBuf> {
 /// Installs the downloaded (or freshly downloaded) update. On Windows the installer ends this process and
 /// relaunches the app; elsewhere we restart explicitly.
 async fn install_inner(app: &AppHandle) -> Result<(), String> {
+    if !self_updating() {
+        let _ = app.opener().open_url(DOWNLOAD_PAGE, None::<&str>);
+        return Ok(());
+    }
     let (update, bytes, version) = {
         let mut g = st().lock();
         if g.installing {
@@ -193,6 +214,7 @@ pub fn status() -> Value {
         "lastCheckedAt": g.last_checked_ms,
         "available": g.available.is_some(),
         "downloaded": g.bytes.is_some(),
+        "manualInstall": !self_updating(),
     });
     if let Some((ver, _)) = &g.available {
         v["version"] = json!(ver);
@@ -220,7 +242,9 @@ pub fn tray_check(app: &AppHandle) {
         let text = match check_now(&app).await {
             Ok(v) if v["available"] == true => {
                 let ver = v["version"].as_str().unwrap_or("").to_string();
-                if auto_on(&app) {
+                if !self_updating() {
+                    format!("v{ver} is available. Download it from the releases page.")
+                } else if auto_on(&app) {
                     format!("v{ver} found. Installs when you are away.")
                 } else {
                     format!("v{ver} is available. Open Settings to install.")
