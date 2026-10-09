@@ -18,7 +18,8 @@ fn atom(c: &Conn, name: &str) -> Option<u32> {
 
 fn prop32(c: &Conn, win: u32, prop: u32, ty: AtomEnum, max: u32) -> Option<Vec<u32>> {
     let r = c.get_property(false, win, prop, ty, 0, max).ok()?.reply().ok()?;
-    Some(r.value32()?.collect())
+    let v: Vec<u32> = r.value32()?.collect();
+    Some(v)
 }
 
 /// Facts about the active window, or None when there is none / no X display / any query fails.

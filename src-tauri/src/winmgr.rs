@@ -191,9 +191,11 @@ pub fn create_overlay(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     if let Some(r) = rect {
         let _ = win.set_position(PhysicalPosition::new(r.x, r.y));
     }
-    let _ = win.set_ignore_cursor_events(true);
+    // Show BEFORE click-through: on Linux the GDK window only exists once realized, and tao unwraps it
+    // (panic) when set_ignore_cursor_events runs first. A hidden start applies it on the first show.
     if !crate::state::is_hidden(app) {
         let _ = win.show();
+        let _ = win.set_ignore_cursor_events(true);
     }
     Ok(win)
 }
@@ -279,6 +281,9 @@ pub fn watch_displays(app: AppHandle) {
 
 pub fn set_interactive(app: &AppHandle, on: bool) {
     if let Some(w) = overlay(app) {
+        if crate::state::is_hidden(app) {
+            return; // not realized yet (Linux/tao would panic); re-applied on show
+        }
         let _ = w.set_ignore_cursor_events(!on);
     }
 }
@@ -320,6 +325,9 @@ pub fn set_companion_visible(app: &AppHandle, visible: bool) {
     app.state::<AppState>().hidden.store(!visible, Ordering::Relaxed);
     if let Some(w) = overlay(app) {
         let _ = if visible { w.show() } else { w.hide() };
+        if visible {
+            let _ = w.set_ignore_cursor_events(true);
+        }
     }
     crate::tray::refresh(app);
 }
