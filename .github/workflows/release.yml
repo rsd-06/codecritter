@@ -59,8 +59,7 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          export_var() { { echo "$1<<CC_EOF"; printf '%s
-' "$2"; echo "CC_EOF"; } >> "$GITHUB_ENV"; }
+          export_var() { { echo "$1<<CC_EOF"; printf '%s\n' "$2"; echo "CC_EOF"; } >> "$GITHUB_ENV"; }
           if [ -n "$APPLE_CERTIFICATE" ] && [ -n "$APPLE_CERTIFICATE_PASSWORD" ] && [ -n "$APPLE_SIGNING_IDENTITY" ]; then
             export_var APPLE_CERTIFICATE "$APPLE_CERTIFICATE"
             export_var APPLE_CERTIFICATE_PASSWORD "$APPLE_CERTIFICATE_PASSWORD"
