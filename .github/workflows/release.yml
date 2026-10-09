@@ -24,8 +24,9 @@ jobs:
             args: '--bundles nsis,msi'
           - os: macos-latest
             args: '--target universal-apple-darwin --bundles app,dmg'
-          - os: ubuntu-latest
-            args: '--bundles appimage,deb'
+          # ubuntu-22.04 (not -latest): older glibc, so the AppImage / deb run on 22.04, Debian 12, Arch and newer.
+          - os: ubuntu-22.04
+            args: '--bundles appimage,deb --features evdev'
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

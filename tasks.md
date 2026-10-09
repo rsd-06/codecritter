@@ -112,3 +112,15 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · owner in brackets. Full
 - [x] Scroll fix: exact wheel hook (small touchpad deltas), direction-aware paper, speed scaling
 - [x] Sound redesign + autoplay fix, click frenzy, escalating reminders, per-category toggles
 - [x] Release v0.2.1: version bumped; tag and publish the draft so latest.json goes live (maintainer)
+
+## v0.3 Linux [platform/linux]
+- [x] Wayland strategy: GDK_BACKEND=x11 (XWayland) by default, CRITTER_WAYLAND=1 opt-out (platform/linux/session.rs)
+- [x] X11 fullscreen peek detection (x11rb, EWMH) feeding the pure `peek::decide_x11`, unit-tested
+- [x] XDG autostart .desktop; tray failure no longer aborts startup + one-time hint bubbles (tray host missing, dead input on Wayland)
+- [x] Updater: AppImage self-updates, .deb/AUR show "update available" and open the releases page
+- [x] WebKitGTK autoplay (media without user gesture), deb depends/recommends, rpm depends
+- [x] Optional evdev input backend (feature `evdev`, opt-in `~/.codecritter/evdev` / CRITTER_EVDEV=1, `input` group)
+- [x] CI: linux-smoke.yml (build on ubuntu-22.04; ubuntu 22.04/24.04, debian 12, arch containers under Xvfb; AUR makepkg job); release.yml Linux on ubuntu-22.04
+- [x] AUR PKGBUILD + .SRCINFO + update.sh (packaging/aur), docs/linux.md
+- [ ] WSLg / podman local verification (blocked on apt packages in Ubuntu-24.04)
+- [ ] Publish codecritter-bin to the AUR (maintainer account, steps in docs/linux.md)
