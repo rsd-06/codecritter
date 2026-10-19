@@ -1,0 +1,164 @@
+name: Linux
+
+# Linux-only pipeline: keeps the existing cross-platform CI (ci.yml) untouched and adds what Linux
+# actually needs: two supported Ubuntu baselines, a real bundle, and a clean-distro runtime smoke test.
+# Debian 12 has no GitHub-hosted runner, so it is validated as a container install/runtime check
+# (see the `smoke` job) rather than a compile job.
+on:
+  push:
+    branches: [main, develop, 'linux/**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Kept in sync with ci.yml / release.yml.
+  NODE_VERSION: '22'
+
+jobs:
+  check:
+    name: check (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Linux system libraries (Tauri/WebKitGTK 4.1, tray, rdev/XRecord)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
+            libxdo-dev libxtst-dev libx11-dev libxi-dev libssl-dev patchelf build-essential \
+            pkg-config file
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run lint
+      # tauri::generate_context! needs the built frontend (dist-tauri) to compile.
+      - run: npm run build
+      - run: cargo check --manifest-path src-tauri/Cargo.toml
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      # The Linux-specific platform modules only exist when their cfg/feature is active, so the default
+      # build alone never compiles evdev.rs. Feature combinations are part of the contract.
+      - name: Cargo check with the optional evdev feature
+        run: cargo check --manifest-path src-tauri/Cargo.toml --features evdev
+      - name: Cargo test with the optional evdev feature
+        run: cargo test --manifest-path src-tauri/Cargo.toml --features evdev
+
+  package:
+    name: bundle (amd64)
+    # Build on the OLDEST supported baseline: glibc is the ABI floor, so artifacts built here also
+    # run on Ubuntu 24.04 (glibc 2.39) and Debian 12 (glibc 2.36).
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Linux system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
+            libxdo-dev libxtst-dev libx11-dev libxi-dev libssl-dev patchelf build-essential \
+            pkg-config file
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      # `createUpdaterArtifacts` is on in tauri.conf.json for the signed release flow, which needs
+      # TAURI_SIGNING_PRIVATE_KEY. dist:linux turns it off so an unsigned build (fork, PR, local)
+      # still succeeds; release.yml keeps it on with the key from secrets. No secret is read here.
+      #
+      # NOTE: the AppImage step downloads linuxdeploy (~20 MB) from GitHub, so this job needs network
+      # egress to github.com. That download is the flakiest step; re-run the job if it times out.
+      - run: npm run dist:linux
+      - name: Report artifacts
+        run: ls -la src-tauri/target/release/bundle/*/
+      # Static metadata gate: this catches packaging regressions that the runtime smoke test cannot,
+      # notably a Depends list containing the same package twice. Tauri merges bundle.linux.deb.depends
+      # with its own auto-detected list, so declaring GTK/WebKit/AppIndicator there duplicates them.
+      - name: Validate .deb metadata
+        run: |
+          set -euo pipefail
+          DEB=$(ls src-tauri/target/release/bundle/deb/*.deb | head -1)
+          DEPS=$(dpkg-deb -f "$DEB" Depends | tr ',' '\n' | sed 's/^ *//;s/ *$//')
+          echo "Depends:"; echo "$DEPS" | sed 's/^/  - /'
+          DUPES=$(echo "$DEPS" | sort | uniq -d)
+          if [ -n "$DUPES" ]; then echo "duplicate Depends entries: $DUPES"; exit 1; fi
+          for required in libwebkit2gtk-4.1-0 libgtk-3-0 libayatana-appindicator3-1 libxtst6 libx11-6 libxi6; do
+            echo "$DEPS" | grep -qx "$required" || { echo "missing Depends: $required"; exit 1; }
+          done
+          dpkg-deb -f "$DEB" Package Version Architecture | sed 's/^/  /'
+          dpkg-deb -c "$DEB" | grep -q '^-rwxr-xr-x.*usr/bin/codecritter$' \
+            || { echo "the binary must be 0755 in /usr/bin"; exit 1; }
+          echo ".deb metadata: OK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-amd64-bundles
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
+            src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+
+  smoke:
+    name: smoke (${{ matrix.image }})
+    needs: package
+    # A container is NOT a native distribution runner: it proves the package installs, resolves its
+    # declared dependencies, launches and removes cleanly, and that the app starts on that distro's
+    # library set. It does NOT prove anything about the real hardware, the real window manager, the
+    # tray host, global shortcuts, GPU compositing or input capture — those need a desktop session
+    # (see docs/linux.md "Troubleshooting" for the manual checks). Debian 12 has no GitHub-hosted
+    # runner, which is the reason it is covered here rather than as a compile job.
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [ubuntu:22.04, ubuntu:24.04, debian:12]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-amd64-bundles
+          path: src-tauri/target/release/bundle
+      - name: Run tools/linux-smoke.sh in ${{ matrix.image }}
+        run: |
+          docker run --rm \
+            -e MODE=deb \
+            -v "$PWD/src-tauri/target/release/bundle/deb:/w/art:ro" \
+            -v "$PWD/tools/linux-smoke.sh:/w/linux-smoke.sh:ro" \
+            -v "$RUNNER_TEMP/smoke-out:/w/out" \
+            '${{ matrix.image }}' sh /w/linux-smoke.sh
+      - name: AppImage smoke (ubuntu:22.04)
+        if: matrix.image == 'ubuntu:22.04'
+        run: |
+          mkdir -p "$RUNNER_TEMP/smoke-out"
+          docker run --rm \
+            -e MODE=appimage \
+            -v "$PWD/src-tauri/target/release/bundle/appimage:/w/art:ro" \
+            -v "$PWD/tools/linux-smoke.sh:/w/linux-smoke.sh:ro" \
+            -v "$RUNNER_TEMP/smoke-out:/w/out" \
+            ubuntu:22.04 sh /w/linux-smoke.sh
+      - name: Keep smoke logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-smoke-logs-${{ matrix.image }}
+          path: ${{ runner.temp }}/smoke-out
+          if-no-files-found: ignore

@@ -144,6 +144,19 @@ export interface UpdateStatus {
   version?: string;
   /** The update is downloaded and waits for a quiet moment (or quit) to install. */
   downloaded: boolean;
+  /**
+   * This install cannot replace itself in place (Linux .deb / .rpm / distro packages are owned by the
+   * package manager). `install_update` then only opens the releases page, so the UI must not promise an
+   * in-app install. Optional: absent means the platform self-updates (Windows, macOS, Linux AppImage).
+   */
+  manualInstall?: boolean;
+  /**
+   * Releases page this build consumes (single source of truth: `updater::RELEASES_PAGE`, which must
+   * match `plugins.updater.endpoints`). A build made from a fork consumes the *upstream* project's
+   * releases, so applying an update replaces the running binary with that project's build. The UI
+   * states this rather than implying the update is a rebuild of this copy.
+   */
+  source?: string;
   /** Last check failed (offline, no release, ...). */
   error?: string;
 }

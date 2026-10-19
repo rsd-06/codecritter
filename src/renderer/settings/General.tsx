@@ -6,14 +6,41 @@ import { VERSION } from './About';
 import { clamp } from './helpers';
 import { Section, Slider, TextField, TimeField, Toggle, useCtx } from './ui';
 
+/** Platform-neutral: the same toggle drives the Windows registry Run key, the macOS LaunchAgent and
+ *  `~/.config/autostart/codecritter.desktop` on Linux, so naming one OS here would be wrong on the others. */
+export const AUTOSTART_LABEL = 'Start at login';
+
 /** One line describing the last update check. */
 export function updateStatusLine(s: UpdateStatus | null): string {
   if (!s) return 'Not checked yet.';
   if (s.downloaded && s.version) return `v${s.version} is downloaded and installs when you are away (or on quit).`;
-  if (s.available && s.version) return `v${s.version} is available.`;
+  if (s.available && s.version) {
+    return s.manualInstall
+      ? `v${s.version} is available. Download it from the releases page.`
+      : `v${s.version} is available.`;
+  }
   if (s.error) return 'Could not check (offline?). Will retry automatically.';
   if (s.lastCheckedAt) return `Up to date (checked ${new Date(s.lastCheckedAt).toLocaleTimeString()}).`;
   return 'Not checked yet.';
+}
+
+/**
+ * Where updates come from, and the one thing that is easy to get wrong: a build made from a fork
+ * consumes the *upstream* project's releases, so a self-install replaces the running binary with that
+ * project's build rather than with a rebuild of this copy. Say so instead of implying otherwise.
+ */
+export function updateSourceLine(s: UpdateStatus | null): string {
+  if (!s?.source) return '';
+  const base = `Updates come from ${s.source}.`;
+  return s.manualInstall
+    ? `${base} A .deb/.rpm install is managed by your package manager, so nothing is replaced in place.`
+    : `${base} Installing an update replaces this copy with that project's build.`;
+}
+
+/** Label of the install button: a package-managed install can only open the download page. */
+export function installButtonLabel(s: UpdateStatus | null): string {
+  if (!s?.version) return 'Install and restart';
+  return s.manualInstall ? `Download v${s.version}` : `Install v${s.version} and restart`;
 }
 
 const UpdatesGroup = memo(function UpdatesGroup() {
@@ -42,7 +69,11 @@ const UpdatesGroup = memo(function UpdatesGroup() {
   const install = (): void => {
     setBusy(true);
     bridge.installUpdate().then(
-      () => setBusy(false),
+      () => {
+        setBusy(false);
+        // A package-managed install only opens the releases page; say so instead of looking like a no-op.
+        if (status?.manualInstall) toast('Opening the releases page', true);
+      },
       () => {
         setBusy(false);
         toast('Update failed', false);
@@ -61,13 +92,18 @@ const UpdatesGroup = memo(function UpdatesGroup() {
       <p className="hint" data-testid="update-status">
         Version {status?.currentVersion ?? VERSION}. {updateStatusLine(status)}
       </p>
+      {updateSourceLine(status) && (
+        <p className="hint" data-testid="update-source">
+          {updateSourceLine(status)}
+        </p>
+      )}
       <div className="actions">
         <button type="button" className="btn" disabled={busy} onClick={check}>
           {busy ? 'Checking...' : 'Check for updates now'}
         </button>
         {status?.available && status.version && (
           <button type="button" className="btn" disabled={busy} onClick={install}>
-            Install v{status.version} and restart
+            {installButtonLabel(status)}
           </button>
         )}
       </div>
@@ -188,7 +224,7 @@ export const GeneralTab = memo(function GeneralTab() {
 
       <SoundGroup />
 
-      <Toggle label="Start with Windows" hint="Launch CodeCritter when you sign in (installed app only)." checked={settings.autostart} onChange={(on) => save({ autostart: on })} />
+      <Toggle label={AUTOSTART_LABEL} hint="Launch CodeCritter when you sign in (installed app only)." checked={settings.autostart} onChange={(on) => save({ autostart: on })} />
 
       <div className="group">
         <Toggle

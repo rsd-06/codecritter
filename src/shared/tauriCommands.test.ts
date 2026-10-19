@@ -1,6 +1,11 @@
 // Contract check: every command the Tauri bridge invokes is registered in the Rust invoke_handler and the
 // JS argument names match the Rust parameters (snake_case). A missing registration makes the call reject
 // at runtime, which is exactly what the Settings > AI Agents buttons depend on.
+//
+// Second contract check: every key `updater::status()` emits must be declared on the TS `UpdateStatus`
+// interface. An undeclared key is silently dropped by TypeScript, which is how the Linux updater port
+// shipped a `manualInstall` flag that the settings window never read — the UI then promised an in-app
+// install on .deb/.rpm, where the app only opens the releases page.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -30,5 +35,38 @@ describe('tauri-bridge <-> Rust commands', () => {
         expect(sig.includes(`${rust}:`), `${name}: arg ${a} vs (${sig})`).toBe(true);
       }
     }
+  });
+});
+
+describe('updater::status() <-> UpdateStatus', () => {
+  it('declares every key the Rust status payload emits', () => {
+    const rs = read('src-tauri/src/updater.rs');
+    const ts = read('src/shared/types.ts');
+
+    // Body of `pub fn status() -> Value { ... }`, so keys from other functions cannot leak in.
+    const body = /pub fn status\(\) -> Value \{(?:[^{}]|\{[^{}]*\})*\}/.exec(rs)?.[0];
+    expect(body, 'updater::status() not found — update this test').toBeDefined();
+    const emitted = new Set(
+      [...(body as string).matchAll(/v?\[\s*"(\w+)"\s*\]|"(\w+)"\s*:/g)].map((m) => m[1] ?? m[2]),
+    );
+
+    const iface = /export interface UpdateStatus \{(?:[^{}]|\{[^{}]*\})*\}/.exec(ts)?.[0];
+    expect(iface, 'UpdateStatus interface not found — update this test').toBeDefined();
+    const declared = new Set(
+      [...(iface as string).matchAll(/^\s+(\w+)\??:/gm)].map((m) => m[1]),
+    );
+
+    expect(emitted.size).toBeGreaterThan(4);
+    for (const k of emitted) {
+      expect(declared.has(k), `updater::status() emits "${k}" but UpdateStatus does not declare it`).toBe(true);
+    }
+  });
+
+  it('keeps the release-ownership fields the Linux updater path depends on', () => {
+    // `manualInstall` drives install-vs-download wording; `source` discloses whose releases are
+    // consumed. Losing either silently regresses the Settings > General updater group.
+    const iface = /export interface UpdateStatus \{(?:[^{}]|\{[^{}]*\})*\}/.exec(read('src/shared/types.ts'))?.[0] ?? '';
+    expect(iface).toMatch(/\bmanualInstall\??:/);
+    expect(iface).toMatch(/\bsource\??:/);
   });
 });

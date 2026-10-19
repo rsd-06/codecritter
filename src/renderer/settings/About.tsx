@@ -13,7 +13,7 @@ export const AboutTab = memo(function AboutTab() {
         <strong>CodeCritter</strong> v{VERSION} &middot; MIT licensed
       </p>
       <p>
-        Source:{' '}
+        Upstream project:{' '}
         <a
           href={REPO_URL}
           target="_blank"
@@ -25,6 +25,11 @@ export const AboutTab = memo(function AboutTab() {
         >
           {REPO_URL}
         </a>
+      </p>
+      <p className="hint">
+        CodeCritter is MIT licensed and developed there. If this copy was built from a fork or from
+        source rather than downloaded from a release, it is not an official build: it checks the
+        upstream project's releases, and installing an update replaces it with that project's build.
       </p>
 
       <h3>Privacy</h3>

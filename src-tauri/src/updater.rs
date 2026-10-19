@@ -33,7 +33,11 @@ fn self_updating() -> bool {
     }
 }
 
-const DOWNLOAD_PAGE: &str = "https://github.com/rsd-06/codecritter/releases/latest";
+/// The releases this build consumes. Must stay in step with `plugins.updater.endpoints` in
+/// tauri.conf.json (the check itself) and is what the settings window shows the user, because a copy
+/// built from a fork consumes the *upstream* project's releases: installing an update replaces the
+/// running binary with that project's build, not with a rebuild of this one.
+pub const RELEASES_PAGE: &str = "https://github.com/rsd-06/codecritter/releases/latest";
 
 pub const FIRST_CHECK_AFTER: Duration = Duration::from_secs(30);
 pub const CHECK_EVERY: Duration = Duration::from_secs(6 * 3600);
@@ -157,7 +161,7 @@ fn marker_path(app: &AppHandle) -> Option<std::path::PathBuf> {
 /// relaunches the app; elsewhere we restart explicitly.
 async fn install_inner(app: &AppHandle) -> Result<(), String> {
     if !self_updating() {
-        let _ = app.opener().open_url(DOWNLOAD_PAGE, None::<&str>);
+        let _ = app.opener().open_url(RELEASES_PAGE, None::<&str>);
         return Ok(());
     }
     let (update, bytes, version) = {
@@ -215,6 +219,7 @@ pub fn status() -> Value {
         "available": g.available.is_some(),
         "downloaded": g.bytes.is_some(),
         "manualInstall": !self_updating(),
+        "source": RELEASES_PAGE,
     });
     if let Some((ver, _)) = &g.available {
         v["version"] = json!(ver);
@@ -323,5 +328,38 @@ mod tests {
         assert!(check_due(Duration::from_secs(30), None));
         assert!(!check_due(Duration::from_secs(9999), Some(Duration::from_secs(3600))));
         assert!(check_due(Duration::from_secs(99999), Some(CHECK_EVERY)));
+    }
+
+    /// `update_status` must always carry `manualInstall`: the settings window keys the whole
+    /// install-vs-download wording off it, and a missing key would silently read as "self-updating",
+    /// which is wrong on every Linux package install (see `UpdateStatus.manualInstall`).
+    #[test]
+    fn status_always_reports_the_manual_install_flag() {
+        let s = status();
+        assert_eq!(
+            s["manualInstall"].as_bool(),
+            Some(!self_updating()),
+            "status() must expose manualInstall = !self_updating()"
+        );
+        // The flag must never claim self-update while this process cannot self-update.
+        #[cfg(target_os = "linux")]
+        assert_eq!(
+            s["manualInstall"].as_bool(),
+            Some(!crate::platform::linux::install::can_self_update())
+        );
+    }
+
+    /// `update_status` must always name the releases page this build consumes, and it must match the
+    /// configured updater endpoint. A copy built from a fork consumes another project's releases, and
+    /// the settings window relies on this to say so instead of implying the update is a rebuild of this
+    /// copy. Drift here is a release-safety bug, so assert the two cannot disagree.
+    #[test]
+    fn status_names_the_releases_page_and_matches_the_configured_endpoint() {
+        let s = status();
+        assert_eq!(s["source"].as_str(), Some(RELEASES_PAGE));
+        assert!(RELEASES_PAGE.starts_with("https://"), "not https");
+        let cfg = include_str!("../tauri.conf.json");
+        let at = cfg.find("\"endpoints\"").expect("no updater endpoints");
+        assert!(cfg[at..].contains(RELEASES_PAGE), "endpoint drift");
     }
 }
