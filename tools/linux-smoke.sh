@@ -23,7 +23,7 @@ case "$ID" in
     apt-get update -qq
     TOOLS="xvfb xdotool x11-utils imagemagick curl openbox dbus-x11 ca-certificates xdg-utils"
     if [ "$MODE" = deb ]; then
-      DEB=$(ls "$ART"/*.deb | head -1)
+      DEB=$(find "$ART" -name '*.deb' | head -1)
       # shellcheck disable=SC2086
       apt-get install -y -qq $TOOLS "$DEB" >"$OUT/install-$TAG.log" 2>&1 || { cat "$OUT/install-$TAG.log"; exit 1; }
       PKG=$(dpkg-deb -f "$DEB" Package)
@@ -48,7 +48,7 @@ case "$ID" in
 esac
 
 if [ "$MODE" = appimage ]; then
-  AI=$(ls "$ART"/*.AppImage | head -1)
+  AI=$(find "$ART" -name '*.AppImage' | head -1)
   chmod +x "$AI"
   # No FUSE inside containers: always use the documented fallback.
   BIN="$AI --appimage-extract-and-run"
