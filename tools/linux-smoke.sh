@@ -20,7 +20,7 @@ echo "== smoke: $TAG =="
 case "$ID" in
   ubuntu | debian)
     export DEBIAN_FRONTEND=noninteractive
-    apt-get update -qq
+    for i in 1 2 3; do apt-get update -qq && break; sleep 5; done
     TOOLS="xvfb xdotool x11-utils imagemagick curl openbox dbus-x11 ca-certificates xdg-utils"
     if [ "$MODE" = deb ]; then
       DEB=$(find "$ART" -name '*.deb' | head -1)
@@ -81,18 +81,25 @@ if [ "$OK" != 1 ]; then
 fi
 echo "health: $(cat "$OUT/health-$TAG.json")"
 
-# Overlay window: present, above, skip-taskbar.
-sleep 4
-WID=$(xdotool search --name '^CodeCritter$' 2>/dev/null | head -1 || true)
-if [ -z "$WID" ]; then
+# Overlay window: GTK creates several X windows with this title; at least one managed toplevel must be
+# above (always-on-top) and skip-taskbar. Retry: the WM writes _NET_WM_STATE shortly after mapping.
+FOUND=""
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  for W in $(xdotool search --name '^CodeCritter$' 2>/dev/null || true); do
+    ST=$(xprop -id "$W" _NET_WM_STATE 2>/dev/null || true)
+    case "$ST" in *ABOVE*SKIP_TASKBAR* | *SKIP_TASKBAR*ABOVE*) FOUND="$W: $ST"; break ;; esac
+  done
+  [ -n "$FOUND" ] && break
+  sleep 1
+done
+if [ -z "$FOUND" ]; then
+  echo "FAIL: no always-on-top skip-taskbar overlay window"
   xwininfo -root -tree >"$OUT/tree-$TAG.txt" 2>&1 || true
-  echo "FAIL: no overlay window found"; exit 1
+  for W in $(xdotool search --name 'CodeCritter' 2>/dev/null || true); do echo "$W: $(xprop -id "$W" _NET_WM_STATE WM_NAME 2>&1 | tr '\n' ' ')"; done
+  import -window root "$OUT/shot-fail-$TAG.png" || true
+  exit 1
 fi
-STATE=$(xprop -id "$WID" _NET_WM_STATE 2>/dev/null || true)
-echo "overlay $WID: $STATE"
-case "$STATE" in *ABOVE*) ;; *) echo "FAIL: overlay is not always-on-top"; exit 1 ;; esac
-case "$STATE" in *SKIP_TASKBAR*) ;; *) echo "FAIL: overlay is not skip-taskbar"; exit 1 ;; esac
-
+echo "overlay $FOUND"
 # An agent event is accepted (token auth works).
 TOKEN=$(cat "$HOME/.codecritter/token" 2>/dev/null || true)
 CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
